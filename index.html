@@ -31,9 +31,7 @@
       transition: opacity 60ms linear;
       z-index:9999;
     }
-    #flashOverlay.on{
-      opacity:1;
-    }
+    #flashOverlay.on{ opacity:1; }
 
     .clock{
       text-align:center;
@@ -56,9 +54,7 @@
       color:#fff;
       transition: color 120ms linear;
     }
-    .time.urgent{
-      color:#ff2d2d; /* red last 10s */
-    }
+    .time.urgent{ color:#ff2d2d; } /* red last 10s */
 
     .info{
       margin-top:1.5vh;
@@ -102,6 +98,15 @@
       cursor:pointer;
       -webkit-tap-highlight-color:transparent;
       font-family: inherit;
+
+      /* pressed feedback */
+      transition: transform 80ms ease, filter 80ms ease, box-shadow 80ms ease;
+      box-shadow: 0 0.6vw 1.2vw rgba(0,0,0,0.35);
+    }
+    button:active{
+      transform: scale(0.97);
+      filter: brightness(0.92);
+      box-shadow: 0 0.2vw 0.6vw rgba(0,0,0,0.35);
     }
 
     .green{ background:#4CAF50; color:#000; }
@@ -109,18 +114,137 @@
     .red{ background:#f44336; color:#000; }
     .gray{ background:#cfcfcf; color:#000; }
 
-    .error{
-      margin-top:2vh;
-      font-size:3vw;
-      color:#ffb3b3;
+    /* Settings button */
+    .topbar{
+      position:fixed;
+      top:1vh;
+      right:1vw;
+      z-index:9000;
+    }
+    .settingsBtn{
+      font-size:2.6vw;
+      padding:1vw 1.6vw;
+      border-radius:12px;
+      background:#2b2b2b;
+      color:#fff;
+      border:1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 0.6vw 1.2vw rgba(0,0,0,0.35);
+    }
+    .settingsBtn:active{
+      transform: scale(0.97);
+      filter: brightness(0.92);
+      box-shadow: 0 0.2vw 0.6vw rgba(0,0,0,0.35);
+    }
+
+    /* Settings modal */
+    #modalOverlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.6);
       display:none;
-      white-space:pre-wrap;
+      align-items:center;
+      justify-content:center;
+      z-index:9500;
+      padding:3vh 3vw;
+      box-sizing:border-box;
+    }
+    #modal{
+      width:min(92vw, 720px);
+      background:#1b1b1b;
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:18px;
+      padding:3vh 3vw;
+      box-shadow: 0 2vw 4vw rgba(0,0,0,0.5);
+      text-align:left;
+    }
+    #modal h2{
+      margin:0 0 2vh 0;
+      font-size:4vw;
+    }
+    .field{
+      margin:2vh 0;
+    }
+    .field label{
+      display:block;
+      font-size:3vw;
+      opacity:0.85;
+      margin-bottom:0.8vh;
+    }
+    select{
+      width:100%;
+      font-size:3vw;
+      padding:1.2vh 1vw;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.15);
+      background:#111;
+      color:#fff;
+      font-family: inherit;
+    }
+    .modalButtons{
+      margin-top:3vh;
+      display:flex;
+      gap:1vw;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+    .smallBtn{
+      font-size:2.8vw;
+      padding:1vw 1.8vw;
+      border-radius:12px;
+      border:none;
+      cursor:pointer;
+      font-family: inherit;
+      transition: transform 80ms ease, filter 80ms ease, box-shadow 80ms ease;
+      box-shadow: 0 0.6vw 1.2vw rgba(0,0,0,0.35);
+    }
+    .smallBtn:active{
+      transform: scale(0.97);
+      filter: brightness(0.92);
+      box-shadow: 0 0.2vw 0.6vw rgba(0,0,0,0.35);
+    }
+    .smallGray{ background:#cfcfcf; color:#000; }
+    .smallGreen{ background:#4CAF50; color:#000; }
+    .smallRed{ background:#f44336; color:#000; }
+
+    .hint{
+      margin-top:1vh;
+      font-size:2.6vw;
+      opacity:0.55;
+      line-height:1.25;
     }
   </style>
 </head>
 
 <body>
   <div id="flashOverlay"></div>
+
+  <div class="topbar">
+    <button class="settingsBtn" id="btnSettings">⚙️ Settings</button>
+  </div>
+
+  <div id="modalOverlay" role="dialog" aria-modal="true">
+    <div id="modal">
+      <h2>Settings</h2>
+
+      <div class="field">
+        <label for="selMinutes">Round length</label>
+        <select id="selMinutes"></select>
+        <div class="hint">Applies to all levels. Timer resets to this value when level changes or when you press Reset level.</div>
+      </div>
+
+      <div class="field">
+        <label for="selMaxBlind">Max blind (final level)</label>
+        <select id="selMaxBlind"></select>
+        <div class="hint">Prevents advancing beyond this blind. “Next” and auto-advance will stop here.</div>
+      </div>
+
+      <div class="modalButtons">
+        <button class="smallBtn smallRed" id="btnResetSettings">Reset settings</button>
+        <button class="smallBtn smallGray" id="btnCancelSettings">Cancel</button>
+        <button class="smallBtn smallGreen" id="btnSaveSettings">Save</button>
+      </div>
+    </div>
+  </div>
 
   <div class="clock">
     <div class="time" id="time">10:00</div>
@@ -155,31 +279,62 @@
 
   <script>
     // -----------------------
-    // Levels
+    // Levels (base schedule)
     // -----------------------
     const levels = [
-      { sb:25, bb:50, min:10 },
-      { sb:50, bb:100, min:10 },
-      { sb:100, bb:200, min:10 },
-      { sb:150, bb:300, min:10 },
-      { sb:200, bb:400, min:10 },
-      { sb:300, bb:600, min:10 },
-      { sb:400, bb:800, min:10 },
-      { sb:600, bb:1200, min:10 },
-      { sb:800, bb:1600, min:10 }
+      { sb:25, bb:50 },
+      { sb:50, bb:100 },
+      { sb:100, bb:200 },
+      { sb:150, bb:300 },
+      { sb:200, bb:400 },
+      { sb:300, bb:600 },
+      { sb:400, bb:800 },
+      { sb:600, bb:1200 },
+      { sb:800, bb:1600 }
     ];
+
+    // -----------------------
+    // Settings (persisted)
+    // -----------------------
+    const SETTINGS_KEY = "pokerClockSettings_v1";
+    const DEFAULT_SETTINGS = {
+      roundMinutes: 10,
+      maxLevelIndex: levels.length - 1 // last index
+    };
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (!raw) return { ...DEFAULT_SETTINGS };
+        const parsed = JSON.parse(raw);
+        const roundMinutes = Number(parsed.roundMinutes);
+        const maxLevelIndex = Number(parsed.maxLevelIndex);
+
+        const safe = { ...DEFAULT_SETTINGS };
+
+        if (Number.isFinite(roundMinutes) && roundMinutes >= 1 && roundMinutes <= 60) safe.roundMinutes = roundMinutes;
+        if (Number.isFinite(maxLevelIndex) && maxLevelIndex >= 0 && maxLevelIndex < levels.length) safe.maxLevelIndex = maxLevelIndex;
+
+        return safe;
+      } catch {
+        return { ...DEFAULT_SETTINGS };
+      }
+    }
+
+    function saveSettings(s) {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    }
+
+    let settings = loadSettings();
 
     // -----------------------
     // State
     // -----------------------
     let level = 0;
-    let remaining = levels[0].min * 60;
+    let remaining = settings.roundMinutes * 60;
     let timer = null;
 
-    // Prevent repeat alerts within a level
     let didWarn60 = false;
-
-    // last-5-sec flash control (avoid double flashing in same second)
     let lastFlashSecond = null;
 
     // -----------------------
@@ -190,6 +345,14 @@
     const elNextBlinds = document.getElementById("nextBlinds");
     const elErr = document.getElementById("err");
     const elFlash = document.getElementById("flashOverlay");
+
+    const btnSettings = document.getElementById("btnSettings");
+    const modalOverlay = document.getElementById("modalOverlay");
+    const selMinutes = document.getElementById("selMinutes");
+    const selMaxBlind = document.getElementById("selMaxBlind");
+    const btnCancelSettings = document.getElementById("btnCancelSettings");
+    const btnSaveSettings = document.getElementById("btnSaveSettings");
+    const btnResetSettings = document.getElementById("btnResetSettings");
 
     function showError(msg){
       elErr.style.display = "block";
@@ -203,6 +366,14 @@
       return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
     }
 
+    function maxIndex() {
+      return Math.min(settings.maxLevelIndex, levels.length - 1);
+    }
+
+    function canGoNext() {
+      return level < maxIndex();
+    }
+
     function render(){
       elTime.textContent = fmt(remaining);
 
@@ -211,13 +382,16 @@
       else elTime.classList.remove("urgent");
 
       elCurrentBlinds.textContent = `${levels[level].sb} / ${levels[level].bb}`;
-      elNextBlinds.textContent =
-        level < levels.length-1 ? `${levels[level+1].sb} / ${levels[level+1].bb}` : "—";
+
+      if (level < maxIndex()) {
+        elNextBlinds.textContent = `${levels[level+1].sb} / ${levels[level+1].bb}`;
+      } else {
+        elNextBlinds.textContent = "—";
+      }
     }
 
     function flashWhite_() {
       elFlash.classList.add("on");
-      // quick flash
       setTimeout(() => elFlash.classList.remove("on"), 110);
     }
 
@@ -250,20 +424,18 @@
       osc.stop(t + 0.08);
     }
 
-    // 60s warning: 6 clicks, half-speed (slower than before)
+    // 60s warning: 6 clicks, slower spacing
     function sixClicks60_(){
       if (!audioCtx) return;
       const base = audioCtx.currentTime;
 
-      // Previous had ~0.14s spacing for 3 clicks.
-      // Half-speed => double spacing => ~0.28s.
       const spacing = 0.28;
       for (let i = 0; i < 6; i++) {
         clickAt_(base, i * spacing, 0.11);
       }
     }
 
-    function sirenOnce_(startTime, gainPeak=0.18){
+    function sirenOnce_(startTime, gainPeak=0.20){
       const osc = audioCtx.createOscillator();
       osc.type = "triangle";
 
@@ -275,7 +447,6 @@
       osc.connect(g);
       g.connect(audioCtx.destination);
 
-      // Siren sweep
       osc.frequency.setValueAtTime(600, startTime);
       osc.frequency.linearRampToValueAtTime(1250, startTime + 0.3);
       osc.frequency.linearRampToValueAtTime(650,  startTime + 0.6);
@@ -286,14 +457,12 @@
       osc.stop(startTime + 1.25);
     }
 
-    // Time-up: siren repeats 3 times, louder
     function sirenTimeUp_(){
       if (!audioCtx) return;
       const base = audioCtx.currentTime;
-
-      // Repeat 3 times with a short gap
-      const gap = 0.20;     // silence between repeats
+      const gap = 0.20;
       const dur = 1.25;
+
       for (let i = 0; i < 3; i++) {
         sirenOnce_(base + i * (dur + gap), 0.20);
       }
@@ -307,7 +476,7 @@
         remaining--;
         render();
 
-        // Flash white on last 5 seconds (every second)
+        // Flash on last 5 seconds
         if (remaining <= 5 && remaining > 0 && lastFlashSecond !== remaining) {
           lastFlashSecond = remaining;
           flashWhite_();
@@ -320,12 +489,10 @@
         }
 
         if (remaining === 0) {
-          // time up sound, then advance+pause
           sirenTimeUp_();
           advanceLevelAndPause();
         }
       } else {
-        // safety
         sirenTimeUp_();
         advanceLevelAndPause();
       }
@@ -344,12 +511,14 @@
 
     function advanceLevelAndPause(){
       pause();
-      if(level < levels.length-1){
+
+      if (canGoNext()) {
         level++;
-        remaining = levels[level].min*60;
-      }else{
+        remaining = settings.roundMinutes * 60;
+      } else {
         remaining = 0;
       }
+
       didWarn60 = false;
       lastFlashSecond = null;
       render();
@@ -362,7 +531,7 @@
       pause();
       if(level>0){
         level--;
-        remaining = levels[level].min*60;
+        remaining = settings.roundMinutes * 60;
       }
       didWarn60 = false;
       lastFlashSecond = null;
@@ -371,7 +540,7 @@
 
     function resetLevel(){
       pause();
-      remaining = levels[level].min*60;
+      remaining = settings.roundMinutes * 60;
       didWarn60 = false;
       lastFlashSecond = null;
       render();
@@ -379,19 +548,101 @@
 
     function resetAll(){
       pause();
-      level=0;
-      remaining = levels[0].min*60;
+      level = 0;
+      remaining = settings.roundMinutes * 60;
       didWarn60 = false;
       lastFlashSecond = null;
       render();
     }
 
     function adjust(sec){
-      remaining = Math.max(0, remaining+sec);
-      // If you jump into last 5 seconds, allow flash sequence to continue cleanly:
+      remaining = Math.max(0, remaining + sec);
       lastFlashSecond = null;
       render();
     }
+
+    // -----------------------
+    // Settings UI
+    // -----------------------
+    function openSettings(){
+      // populate selects
+      selMinutes.innerHTML = "";
+      const minuteOptions = [5, 8, 10, 12, 15, 20, 25, 30];
+      for (const m of minuteOptions) {
+        const opt = document.createElement("option");
+        opt.value = String(m);
+        opt.textContent = `${m} minutes`;
+        selMinutes.appendChild(opt);
+      }
+
+      selMaxBlind.innerHTML = "";
+      for (let i = 0; i < levels.length; i++) {
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = `${levels[i].sb} / ${levels[i].bb}`;
+        selMaxBlind.appendChild(opt);
+      }
+
+      selMinutes.value = String(settings.roundMinutes);
+      selMaxBlind.value = String(settings.maxLevelIndex);
+
+      modalOverlay.style.display = "flex";
+    }
+
+    function closeSettings(){
+      modalOverlay.style.display = "none";
+    }
+
+    function applySettingsFromModal(){
+      const newMinutes = Number(selMinutes.value);
+      const newMaxIndex = Number(selMaxBlind.value);
+
+      settings = {
+        roundMinutes: newMinutes,
+        maxLevelIndex: newMaxIndex
+      };
+      saveSettings(settings);
+
+      // Ensure current level isn't beyond the max
+      if (level > maxIndex()) level = maxIndex();
+
+      // Reset timer to the new round length and pause
+      pause();
+      remaining = settings.roundMinutes * 60;
+      didWarn60 = false;
+      lastFlashSecond = null;
+      render();
+    }
+
+    function resetSettings(){
+      settings = { ...DEFAULT_SETTINGS };
+      saveSettings(settings);
+
+      // Reset timer to defaults and pause
+      pause();
+      level = 0;
+      remaining = settings.roundMinutes * 60;
+      didWarn60 = false;
+      lastFlashSecond = null;
+      render();
+
+      // reflect in modal if open
+      selMinutes.value = String(settings.roundMinutes);
+      selMaxBlind.value = String(settings.maxLevelIndex);
+    }
+
+    btnSettings.addEventListener("click", openSettings);
+    btnCancelSettings.addEventListener("click", closeSettings);
+    btnSaveSettings.addEventListener("click", () => {
+      applySettingsFromModal();
+      closeSettings();
+    });
+    btnResetSettings.addEventListener("click", resetSettings);
+
+    // tap outside modal to close
+    modalOverlay.addEventListener("click", (e) => {
+      if (e.target === modalOverlay) closeSettings();
+    });
 
     // -----------------------
     // Bind buttons
@@ -410,6 +661,7 @@
     document.getElementById("btnPlus").addEventListener("click", () => adjust(60));
     document.getElementById("btnMinus").addEventListener("click", () => adjust(-60));
 
+    // Initial paint
     render();
   </script>
 </body>
