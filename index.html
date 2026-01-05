@@ -80,14 +80,14 @@
       border:none;
       cursor:pointer;
       font-family: inherit;
-      color:#000;                 /* force non-blue text */
+      color:#000;
       background-clip: padding-box;
-      -webkit-appearance:none;    /* iOS */
+      -webkit-appearance:none;
       appearance:none;
       transition: transform 80ms ease, filter 80ms ease;
     }
     button:active{ transform: scale(0.97); filter: brightness(0.9); }
-    button, button *{ color: inherit; } /* keep text color consistent */
+    button, button *{ color: inherit; }
 
     .green{ background:#4CAF50; color:#000; }
     .orange{ background:#FF9800; color:#000; }
@@ -122,7 +122,7 @@
       box-sizing:border-box;
     }
 
-    /* Modal itself: solid (not transparent) */
+    /* Modal itself: solid */
     #modal{
       width:min(80vw, 520px);
       background:#1b1b1b;
@@ -165,7 +165,6 @@
       flex-wrap:wrap;
     }
 
-    /* Ensure modal buttons show their colors correctly */
     #modal button.gray{ background:#cfcfcf; color:#000; }
     #modal button.green{ background:#4CAF50; color:#000; }
   </style>
@@ -175,7 +174,7 @@
 <div id="flashOverlay"></div>
 
 <div class="topbar">
-  <button class="settingsBtn" id="btnSettings">⚙️ Settings</button>
+  <button class="settingsBtn" id="btnSettings" type="button">⚙️ Settings</button>
 </div>
 
 <div id="modalOverlay" role="dialog" aria-modal="true">
@@ -205,7 +204,7 @@
     <div class="btnrow">
       <button class="green" id="btnStart" type="button">Start</button>
       <button class="orange" id="btnPause" type="button">Pause</button>
-      <button class="red" id="btnResetLevel" type="button">Reset Level</button>
+      <button class="red" id="btnResetTimer" type="button">Reset Timer</button>
       <button class="red" id="btnResetAll" type="button">Reset All</button>
     </div>
     <div class="btnrow">
@@ -223,11 +222,11 @@ const levels = [
   {sb:25,bb:50},{sb:50,bb:100},{sb:100,bb:200},{sb:150,bb:300},
   {sb:200,bb:400},{sb:300,bb:600},{sb:400,bb:800},
   {sb:600,bb:1200},{sb:800,bb:1600},
-  {sb:1200,bb:2400},{sb:1600,bb:3200}
+  {sb:1000,bb:2000},{sb:1500,bb:3000},{sb:2000,bb:4000},{sb:3000,bb:6000}
 ];
 
 /* ---------- SETTINGS ---------- */
-const SETTINGS_KEY="pokerClockSettings_v1";
+const SETTINGS_KEY="pokerClockSettings_v2";
 const DEFAULT_SETTINGS={ roundMinutes:10, maxLevelIndex:8 }; // default max = 800/1600
 
 function loadSettings(){
@@ -243,15 +242,15 @@ function loadSettings(){
     if(Number.isFinite(rm) && rm>=1 && rm<=60) s.roundMinutes = rm;
     if(Number.isFinite(mi) && mi>=0 && mi<levels.length) s.maxLevelIndex = mi;
 
-    // clamp to allowed max choices (8,9,10)
-    if(![8,9,10].includes(s.maxLevelIndex)) s.maxLevelIndex = 8;
+    // clamp to allowed max choices
+    const allowed = [8,9,10,11,12];
+    if(!allowed.includes(s.maxLevelIndex)) s.maxLevelIndex = 8;
 
     return s;
   }catch{
     return {...DEFAULT_SETTINGS};
   }
 }
-
 function saveSettings(s){
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
 }
@@ -263,9 +262,7 @@ let level=0;
 let remaining=settings.roundMinutes*60;
 let timer=null;
 
-// 60s warning
 let didWarn60 = false;
-// last 5s flash
 let lastFlashSecond = null;
 
 /* ---------- UI ---------- */
@@ -301,13 +298,11 @@ function clickAt_(baseTime, tOffsetSec, gain=0.12){
   osc.stop(t+0.08);
 }
 
-// tic on last 10 seconds
 function ticLast10_(){
   if(!audioCtx) return;
   clickAt_(audioCtx.currentTime, 0, 0.06);
 }
 
-// 60s warning: 6 slower clicks
 function sixClicks60_(){
   if(!audioCtx) return;
   const base = audioCtx.currentTime;
@@ -315,7 +310,6 @@ function sixClicks60_(){
   for(let i=0;i<6;i++) clickAt_(base, i*spacing, 0.11);
 }
 
-// siren (3 repeats)
 function sirenOnce_(startTime, gainPeak=0.20){
   const osc = audioCtx.createOscillator();
   osc.type = "triangle";
@@ -395,7 +389,7 @@ function tick(){
 
   if(remaining===0){
     sirenTimeUp_();
-    pause(); // stays paused at end
+    onTimeUp_(); // jump to next level and pause (do not start)
   }
 }
 
@@ -409,21 +403,39 @@ function pause(){
   timer = null;
 }
 
+// When time is up: move to next level (if possible), reset timer, and PAUSE
+function onTimeUp_(){
+  pause();
+
+  if(level < maxIndex()){
+    level++;
+    remaining = settings.roundMinutes * 60; // reset timer for next round
+  } else {
+    remaining = 0;
+  }
+
+  didWarn60 = false;
+  lastFlashSecond = null;
+  render();
+  // stays paused; user must press Start
+}
+
 function next(){
   if(level < maxIndex()){
     level++;
-    resetLevel();
+    resetTimer();
   }
 }
 
 function previous(){
   if(level>0){
     level--;
-    resetLevel();
+    resetTimer();
   }
 }
 
-function resetLevel(){
+// Reset timer for current level (pause)
+function resetTimer(){
   pause();
   remaining = settings.roundMinutes*60;
   didWarn60 = false;
@@ -434,7 +446,7 @@ function resetLevel(){
 function resetAll(){
   pause();
   level = 0;
-  resetLevel();
+  resetTimer();
 }
 
 function adjust(sec){
@@ -456,11 +468,13 @@ const selMaxBlind=document.getElementById("selMaxBlind");
   selMinutes.appendChild(opt);
 });
 
-// max blind choices: 800/1600 (default), 1200/2400, 1600/3200
+// max blind choices
 const maxChoices = [
-  { idx: 8, label: "800 / 1600" },
-  { idx: 9, label: "1200 / 2400" },
-  { idx:10, label: "1600 / 3200" }
+  { idx: 8,  label: "800 / 1600" },
+  { idx: 9,  label: "1000 / 2000" },
+  { idx: 10, label: "1500 / 3000" },
+  { idx: 11, label: "2000 / 4000" },
+  { idx: 12, label: "3000 / 6000" }
 ];
 for(const c of maxChoices){
   const opt = document.createElement("option");
@@ -485,7 +499,8 @@ document.getElementById("btnSaveSettings").addEventListener("click", ()=>{
   settings.maxLevelIndex = Number(selMaxBlind.value);
 
   // hard defaults if something weird happens
-  if(![8,9,10].includes(settings.maxLevelIndex)) settings.maxLevelIndex = 8;
+  const allowed = [8,9,10,11,12];
+  if(!allowed.includes(settings.maxLevelIndex)) settings.maxLevelIndex = 8;
   if(!(settings.roundMinutes >= 1 && settings.roundMinutes <= 60)) settings.roundMinutes = 10;
 
   saveSettings(settings);
@@ -493,7 +508,7 @@ document.getElementById("btnSaveSettings").addEventListener("click", ()=>{
   // clamp current level to max
   if(level > maxIndex()) level = maxIndex();
 
-  resetLevel(); // apply new round length, paused
+  resetTimer(); // apply new round length, paused
   closeSettings();
 });
 
@@ -512,7 +527,7 @@ document.getElementById("btnNext").addEventListener("click", next);
 document.getElementById("btnPrev").addEventListener("click", previous);
 document.getElementById("btnPlus").addEventListener("click", ()=>adjust(60));
 document.getElementById("btnMinus").addEventListener("click", ()=>adjust(-60));
-document.getElementById("btnResetLevel").addEventListener("click", resetLevel);
+document.getElementById("btnResetTimer").addEventListener("click", resetTimer);
 document.getElementById("btnResetAll").addEventListener("click", resetAll);
 
 render();
