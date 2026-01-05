@@ -10,7 +10,7 @@
       margin:0;
       background:#111;
       color:#fff;
-      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-family: "Arial Black", Arial, Helvetica, sans-serif;
       display:flex;
       justify-content:center;
       align-items:center;
@@ -18,6 +18,21 @@
       user-select:none;
       -webkit-user-select:none;
       touch-action:manipulation;
+      overflow:hidden;
+    }
+
+    /* White flash overlay (last 5 seconds) */
+    #flashOverlay{
+      position:fixed;
+      inset:0;
+      background:#fff;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity 60ms linear;
+      z-index:9999;
+    }
+    #flashOverlay.on{
+      opacity:1;
     }
 
     .clock{
@@ -54,7 +69,7 @@
       opacity:0.95;
     }
     .info.next{
-      font-size:3.2vw; /* smaller than current */
+      font-size:3.2vw;
       opacity:0.6;
       margin-top:0.6vh;
     }
@@ -105,6 +120,8 @@
 </head>
 
 <body>
+  <div id="flashOverlay"></div>
+
   <div class="clock">
     <div class="time" id="time">10:00</div>
 
@@ -162,6 +179,9 @@
     // Prevent repeat alerts within a level
     let didWarn60 = false;
 
+    // last-5-sec flash control (avoid double flashing in same second)
+    let lastFlashSecond = null;
+
     // -----------------------
     // UI
     // -----------------------
@@ -169,6 +189,7 @@
     const elCurrentBlinds = document.getElementById("currentBlinds");
     const elNextBlinds = document.getElementById("nextBlinds");
     const elErr = document.getElementById("err");
+    const elFlash = document.getElementById("flashOverlay");
 
     function showError(msg){
       elErr.style.display = "block";
@@ -185,7 +206,7 @@
     function render(){
       elTime.textContent = fmt(remaining);
 
-      // last 10 seconds = red
+      // last 10 seconds = red (excluding 00:00)
       if (remaining <= 10 && remaining > 0) elTime.classList.add("urgent");
       else elTime.classList.remove("urgent");
 
@@ -194,94 +215,88 @@
         level < levels.length-1 ? `${levels[level+1].sb} / ${levels[level+1].bb}` : "—";
     }
 
+    function flashWhite_() {
+      elFlash.classList.add("on");
+      // quick flash
+      setTimeout(() => elFlash.classList.remove("on"), 110);
+    }
+
     // -----------------------
     // Audio (Web Audio)
     // -----------------------
     let audioCtx = null;
 
     async function ensureAudioUnlocked_(){
-      // iOS/Safari requires user gesture to start audio
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === "suspended") {
-        await audioCtx.resume();
-      }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") await audioCtx.resume();
     }
 
-    function beep_(freq, durationMs, type="square", gain=0.10){
-      if (!audioCtx) return;
-      const now = audioCtx.currentTime;
+    function clickAt_(baseTime, tOffsetSec, gain=0.12) {
+      const t = baseTime + tOffsetSec;
 
       const osc = audioCtx.createOscillator();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, now);
+      osc.type = "square";
+      osc.frequency.setValueAtTime(1800, t);
 
       const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0.0001, now);
-      g.gain.linearRampToValueAtTime(gain, now + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + (durationMs/1000));
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(gain, t + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
 
       osc.connect(g);
       g.connect(audioCtx.destination);
 
-      osc.start(now);
-      osc.stop(now + (durationMs/1000) + 0.02);
+      osc.start(t);
+      osc.stop(t + 0.08);
     }
 
-    function tripleClick60_(){
-      // 3 short "clicks"
-      // use square wave with short duration
+    // 60s warning: 6 clicks, half-speed (slower than before)
+    function sixClicks60_(){
       if (!audioCtx) return;
       const base = audioCtx.currentTime;
 
-      const click = (tOffset) => {
-        const osc = audioCtx.createOscillator();
-        osc.type = "square";
-        osc.frequency.setValueAtTime(1800, base + tOffset);
-
-        const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.0001, base + tOffset);
-        g.gain.linearRampToValueAtTime(0.10, base + tOffset + 0.005);
-        g.gain.exponentialRampToValueAtTime(0.0001, base + tOffset + 0.06);
-
-        osc.connect(g);
-        g.connect(audioCtx.destination);
-
-        osc.start(base + tOffset);
-        osc.stop(base + tOffset + 0.07);
-      };
-
-      click(0.00);
-      click(0.14);
-      click(0.28);
+      // Previous had ~0.14s spacing for 3 clicks.
+      // Half-speed => double spacing => ~0.28s.
+      const spacing = 0.28;
+      for (let i = 0; i < 6; i++) {
+        clickAt_(base, i * spacing, 0.11);
+      }
     }
 
-    function sirenTimeUp_(){
-      // Siren-like sweep using triangle wave
-      if (!audioCtx) return;
-      const now = audioCtx.currentTime;
-
+    function sirenOnce_(startTime, gainPeak=0.18){
       const osc = audioCtx.createOscillator();
       osc.type = "triangle";
 
       const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0.0001, now);
-      g.gain.linearRampToValueAtTime(0.12, now + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+      g.gain.setValueAtTime(0.0001, startTime);
+      g.gain.linearRampToValueAtTime(gainPeak, startTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, startTime + 1.2);
 
       osc.connect(g);
       g.connect(audioCtx.destination);
 
-      // Sweep up/down a couple times
-      osc.frequency.setValueAtTime(600, now);
-      osc.frequency.linearRampToValueAtTime(1200, now + 0.3);
-      osc.frequency.linearRampToValueAtTime(650,  now + 0.6);
-      osc.frequency.linearRampToValueAtTime(1250, now + 0.9);
-      osc.frequency.linearRampToValueAtTime(700,  now + 1.2);
+      // Siren sweep
+      osc.frequency.setValueAtTime(600, startTime);
+      osc.frequency.linearRampToValueAtTime(1250, startTime + 0.3);
+      osc.frequency.linearRampToValueAtTime(650,  startTime + 0.6);
+      osc.frequency.linearRampToValueAtTime(1300, startTime + 0.9);
+      osc.frequency.linearRampToValueAtTime(700,  startTime + 1.2);
 
-      osc.start(now);
-      osc.stop(now + 1.25);
+      osc.start(startTime);
+      osc.stop(startTime + 1.25);
+    }
+
+    // Time-up: siren repeats 3 times, louder
+    function sirenTimeUp_(){
+      if (!audioCtx) return;
+      const base = audioCtx.currentTime;
+
+      // Repeat 3 times with a short gap
+      const gap = 0.20;     // silence between repeats
+      const dur = 1.25;
+      for (let i = 0; i < 3; i++) {
+        sirenOnce_(base + i * (dur + gap), 0.20);
+      }
     }
 
     // -----------------------
@@ -292,19 +307,25 @@
         remaining--;
         render();
 
+        // Flash white on last 5 seconds (every second)
+        if (remaining <= 5 && remaining > 0 && lastFlashSecond !== remaining) {
+          lastFlashSecond = remaining;
+          flashWhite_();
+        }
+
         // 60s warning (once per level)
         if (remaining === 60 && !didWarn60) {
           didWarn60 = true;
-          tripleClick60_();
+          sixClicks60_();
         }
 
         if (remaining === 0) {
-          // time up signal, then advance+pause
+          // time up sound, then advance+pause
           sirenTimeUp_();
           advanceLevelAndPause();
         }
       } else {
-        // safety (shouldn't happen often)
+        // safety
         sirenTimeUp_();
         advanceLevelAndPause();
       }
@@ -329,7 +350,8 @@
       }else{
         remaining = 0;
       }
-      didWarn60 = false; // reset warning for new level
+      didWarn60 = false;
+      lastFlashSecond = null;
       render();
       // stays paused; user must press Start
     }
@@ -342,7 +364,8 @@
         level--;
         remaining = levels[level].min*60;
       }
-      didWarn60 = false; // reset warning on manual nav
+      didWarn60 = false;
+      lastFlashSecond = null;
       render();
     }
 
@@ -350,6 +373,7 @@
       pause();
       remaining = levels[level].min*60;
       didWarn60 = false;
+      lastFlashSecond = null;
       render();
     }
 
@@ -358,13 +382,14 @@
       level=0;
       remaining = levels[0].min*60;
       didWarn60 = false;
+      lastFlashSecond = null;
       render();
     }
 
     function adjust(sec){
       remaining = Math.max(0, remaining+sec);
-      // if user sets it to 60 exactly, allow the warning to fire on the next tick;
-      // but if they jump past it, we don't retro-fire.
+      // If you jump into last 5 seconds, allow flash sequence to continue cleanly:
+      lastFlashSecond = null;
       render();
     }
 
