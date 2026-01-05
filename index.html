@@ -27,38 +27,45 @@
       box-sizing:border-box;
     }
 
-    /* --- TIME: fixed-width digits so ":" stays centered --- */
+    /* --- TIME (stable colon) --- */
     .time{
       font-size:20vw;
       font-weight:800;
       letter-spacing:0.02em;
       line-height:1;
-      font-variant-numeric: tabular-nums; /* key for stable colon */
-      font-feature-settings: "tnum" 1;    /* fallback */
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
+      min-width:7ch;
       display:inline-block;
-      min-width: 7ch; /* keeps layout stable */
       text-align:center;
     }
 
     .info{
       margin-top:1.5vh;
-      font-size:4.2vw;
-      opacity:0.92;
       line-height:1.2;
     }
-    .info .label{
+    .info.current{
+      font-size:4.4vw;
+      opacity:0.95;
+    }
+    .info.next{
+      font-size:3.2vw; /* smaller than current */
+      opacity:0.6;
+      margin-top:0.6vh;
+    }
+    .label{
       opacity:0.7;
       margin-right:0.5ch;
     }
 
+    /* --- Buttons --- */
     .buttons{
       margin-top:3vh;
       display:flex;
       flex-direction:column;
-      gap:1.2vh;
+      gap:1.4vh;
       align-items:center;
     }
-
     .btnrow{
       display:flex;
       flex-wrap:wrap;
@@ -75,9 +82,11 @@
       cursor:pointer;
       -webkit-tap-highlight-color:transparent;
     }
-    .primary{ background:#4CAF50; color:#000; }
-    .secondary{ background:#ddd; color:#000; }
-    .danger{ background:#f44336; color:#000; }
+
+    .green{ background:#4CAF50; color:#000; }
+    .orange{ background:#FF9800; color:#000; }
+    .red{ background:#f44336; color:#000; }
+    .gray{ background:#cfcfcf; color:#000; }
 
     .error{
       margin-top:2vh;
@@ -85,7 +94,6 @@
       color:#ffb3b3;
       display:none;
       white-space:pre-wrap;
-      opacity:0.95;
     }
   </style>
 </head>
@@ -94,27 +102,28 @@
   <div class="clock">
     <div class="time" id="time">10:00</div>
 
-    <div class="info" id="currentInfo">
+    <div class="info current">
       <span class="label">Current Blinds</span><span id="currentBlinds">25 / 50</span>
     </div>
-    <div class="info" id="nextInfo">
+    <div class="info next">
       <span class="label">Next Blinds</span><span id="nextBlinds">50 / 100</span>
     </div>
 
     <div class="buttons">
-      <!-- Row 1: Start / Pause / Reset timer -->
+      <!-- ROW 1 -->
       <div class="btnrow">
-        <button class="primary" id="btnStart">Start</button>
-        <button class="secondary" id="btnPause">Pause</button>
-        <button class="danger" id="btnResetTimer">Reset timer</button>
+        <button class="green" id="btnStart">Start</button>
+        <button class="orange" id="btnPause">Pause</button>
+        <button class="red" id="btnResetLevel">Reset level</button>
+        <button class="red" id="btnResetAll">Reset All</button>
       </div>
 
-      <!-- Row 2: the rest -->
+      <!-- ROW 2 -->
       <div class="btnrow">
-        <button class="secondary" id="btnNext">Next level</button>
-        <button class="secondary" id="btnResetLevel">Reset level</button>
-        <button class="secondary" id="btnPlus">+1 min</button>
-        <button class="secondary" id="btnMinus">−1 min</button>
+        <button class="gray" id="btnPrev">Previous</button>
+        <button class="gray" id="btnNext">Next</button>
+        <button class="gray" id="btnPlus">+1 min</button>
+        <button class="gray" id="btnMinus">-1 min</button>
       </div>
     </div>
 
@@ -122,7 +131,6 @@
   </div>
 
   <script>
-    // --- Data ---
     const levels = [
       { sb:25, bb:50, min:10 },
       { sb:50, bb:100, min:10 },
@@ -135,112 +143,98 @@
       { sb:800, bb:1600, min:10 }
     ];
 
-    // --- State ---
     let level = 0;
     let remaining = levels[0].min * 60;
     let timer = null;
 
-    // --- UI refs ---
     const elTime = document.getElementById("time");
     const elCurrentBlinds = document.getElementById("currentBlinds");
     const elNextBlinds = document.getElementById("nextBlinds");
-    const elErr = document.getElementById("err");
 
-    function showError(msg){
-      elErr.style.display = "block";
-      elErr.textContent = msg;
-    }
-    window.addEventListener("error", (e) => showError("Error: " + (e.message || "Unknown")));
-
-    function fmtMMSS(sec){
-      const m = Math.floor(sec / 60);
-      const s = sec % 60;
-      return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+    function fmt(sec){
+      const m = Math.floor(sec/60);
+      const s = sec%60;
+      return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
     }
 
     function render(){
-      elTime.textContent = fmtMMSS(remaining);
-
+      elTime.textContent = fmt(remaining);
       elCurrentBlinds.textContent = `${levels[level].sb} / ${levels[level].bb}`;
-
-      if (level < levels.length - 1) {
-        elNextBlinds.textContent = `${levels[level + 1].sb} / ${levels[level + 1].bb}`;
-      } else {
-        elNextBlinds.textContent = `—`;
-      }
+      elNextBlinds.textContent =
+        level < levels.length-1
+          ? `${levels[level+1].sb} / ${levels[level+1].bb}`
+          : "—";
     }
 
     function tick(){
-      if (remaining > 0) {
+      if(remaining>0){
         remaining--;
         render();
-      } else {
-        // When time hits 00:00, auto-advance level, reset to 10:00, and PAUSE.
+      }else{
         advanceLevelAndPause();
       }
     }
 
     function start(){
-      if (timer) return;
-      timer = setInterval(tick, 1000);
+      if(timer) return;
+      timer = setInterval(tick,1000);
     }
 
     function pause(){
-      if (!timer) return;
+      if(!timer) return;
       clearInterval(timer);
-      timer = null;
+      timer=null;
     }
 
-    // --- Requested behavior: level changes -> reset to 10:00 and PAUSE (no auto-start) ---
     function advanceLevelAndPause(){
       pause();
-
-      if (level < levels.length - 1) {
+      if(level < levels.length-1){
         level++;
-        remaining = levels[level].min * 60; // resets to 10 min (or per level)
-        render();
-        // stays paused; user must press Start
-      } else {
-        // final level reached: keep paused at 00:00
+        remaining = levels[level].min*60;
+      }else{
         remaining = 0;
-        render();
       }
+      render();
     }
 
-    function nextLevel(){
-      // Manual next: also resets time and pauses
-      advanceLevelAndPause();
+    function next(){ advanceLevelAndPause(); }
+
+    function previous(){
+      pause();
+      if(level>0){
+        level--;
+        remaining = levels[level].min*60;
+      }
+      render();
     }
 
     function resetLevel(){
-      // Reset current level timer to full duration, and PAUSE (so user decides when to start)
       pause();
-      remaining = levels[level].min * 60;
+      remaining = levels[level].min*60;
+      render();
+    }
+
+    function resetAll(){
+      pause();
+      level=0;
+      remaining = levels[0].min*60;
       render();
     }
 
     function adjust(sec){
-      remaining = Math.max(0, remaining + sec);
+      remaining = Math.max(0, remaining+sec);
       render();
     }
 
-    // "Reset timer" = go back to Level 1 and pause at 10:00
-    function resetTimer(){
-      pause();
-      level = 0;
-      remaining = levels[0].min * 60;
-      render();
-    }
-
-    // Bind buttons
     document.getElementById("btnStart").addEventListener("click", start);
     document.getElementById("btnPause").addEventListener("click", pause);
-    document.getElementById("btnResetTimer").addEventListener("click", resetTimer);
-
-    document.getElementById("btnNext").addEventListener("click", nextLevel);
     document.getElementById("btnResetLevel").addEventListener("click", resetLevel);
-    document.getElementById("btnPlus").addEventListener("click", () => adjust(60));
-    document.getElementById("btnMinus").addEventListener("click", () => adjust(-60));
+    document.getElementById("btnResetAll").addEventListener("click", resetAll);
+
+    document.getElementById("btnPrev").addEventListener("click", previous);
+    document.getElementById("btnNext").addEventListener("click", next);
+    document.getElementById("btnPlus").addEventListener("click", ()=>adjust(60));
+    document.getElementById("btnMinus").addEventListener("click", ()=>adjust(-60));
 
     render();
   </script>
