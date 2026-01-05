@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Poker Clock</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .clock {
+      text-align: center;
+      width: 100%;
+    }
+
+    .time {
+      font-size: 20vw;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+    }
+
+    .blinds {
+      font-size: 5vw;
+      margin-top: 1vh;
+      opacity: 0.85;
+    }
+
+    .level {
+      font-size: 3vw;
+      margin-top: 1vh;
+      opacity: 0.6;
+    }
+
+    .buttons {
+      margin-top: 3vh;
+    }
+
+    button {
+      font-size: 3vw;
+      margin: 0.5vw;
+      padding: 1vw 2vw;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .primary { background: #4CAF50; color: #000; }
+    .secondary { background: #ddd; color: #000; }
+    .danger { background: #f44336; color: #000; }
+  </style>
+</head>
+
+<body>
+  <div class="clock">
+    <div class="time" id="time">10:00</div>
+    <div class="blinds" id="blinds">25 / 50</div>
+    <div class="level" id="level">Taso 1</div>
+
+    <div class="buttons">
+      <button class="primary" onclick="start()">Start</button>
+      <button class="secondary" onclick="pause()">Pause</button>
+      <button class="secondary" onclick="nextLevel()">Next</button>
+      <button class="secondary" onclick="adjust(60)">+1 min</button>
+      <button class="secondary" onclick="adjust(-60)">−1 min</button>
+      <button class="danger" onclick="resetGame()">Reset</button>
+    </div>
+  </div>
+
+  <script>
+    const levels = [
+      { sb:25, bb:50, min:10 },
+      { sb:50, bb:100, min:10 },
+      { sb:100, bb:200, min:10 },
+      { sb:150, bb:300, min:10 },
+      { sb:200, bb:400, min:10 },
+      { sb:300, bb:600, min:10 },
+      { sb:400, bb:800, min:10 },
+      { sb:600, bb:1200, min:10 },
+      { sb:800, bb:1600, min:10 }
+    ];
+
+    let level = 0;
+    let remaining = levels[0].min * 60;
+    let timer = null;
+
+    function render() {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      document.getElementById("time").textContent =
+        String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+
+      document.getElementById("blinds").textContent =
+        levels[level].sb + " / " + levels[level].bb;
+
+      document.getElementById("level").textContent =
+        "Taso " + (level + 1);
+    }
+
+    function tick() {
+      if (remaining > 0) {
+        remaining--;
+        render();
+      } else {
+        nextLevel();
+      }
+    }
+
+    function start() {
+      if (timer) return;
+      timer = setInterval(tick, 1000);
+    }
+
+    function pause() {
+      clearInterval(timer);
+      timer = null;
+    }
+
+    function nextLevel() {
+      pause();
+      if (level < levels.length - 1) {
+        level++;
+        remaining = levels[level].min * 60;
+        render();
+        start();
+      }
+    }
+
+    function adjust(sec) {
+      remaining = Math.max(0, remaining + sec);
+      render();
+    }
+
+    function resetGame() {
+      pause();
+      level = 0;
+      remaining = levels[0].min * 60;
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
