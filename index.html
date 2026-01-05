@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fi">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -28,15 +28,15 @@
       letter-spacing: 0.05em;
     }
 
-    .blinds {
+    .row {
       font-size: 5vw;
       margin-top: 1vh;
-      opacity: 0.85;
+      opacity: 0.9;
     }
 
-    .level {
-      font-size: 3vw;
-      margin-top: 1vh;
+    .next {
+      font-size: 3.5vw;
+      margin-top: 0.5vh;
       opacity: 0.6;
     }
 
@@ -62,16 +62,25 @@
 <body>
   <div class="clock">
     <div class="time" id="time">10:00</div>
-    <div class="blinds" id="blinds">25 / 50</div>
-    <div class="level" id="level">Taso 1</div>
+
+    <!-- Blinds + Level on same row -->
+    <div class="row" id="current">
+      25 / 50 — Level 1
+    </div>
+
+    <!-- Next level below -->
+    <div class="next" id="next">
+      Next: 50 / 100 — Level 2
+    </div>
 
     <div class="buttons">
       <button class="primary" onclick="start()">Start</button>
       <button class="secondary" onclick="pause()">Pause</button>
-      <button class="secondary" onclick="nextLevel()">Next</button>
+      <button class="secondary" onclick="nextLevel()">Next level</button>
+      <button class="secondary" onclick="resetLevel()">Reset level</button>
       <button class="secondary" onclick="adjust(60)">+1 min</button>
       <button class="secondary" onclick="adjust(-60)">−1 min</button>
-      <button class="danger" onclick="resetGame()">Reset</button>
+      <button class="danger" onclick="resetAll()">Reset all</button>
     </div>
   </div>
 
@@ -98,11 +107,15 @@
       document.getElementById("time").textContent =
         String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
 
-      document.getElementById("blinds").textContent =
-        levels[level].sb + " / " + levels[level].bb;
+      document.getElementById("current").textContent =
+        `${levels[level].sb} / ${levels[level].bb} — Level ${level + 1}`;
 
-      document.getElementById("level").textContent =
-        "Taso " + (level + 1);
+      if (level < levels.length - 1) {
+        document.getElementById("next").textContent =
+          `Next: ${levels[level + 1].sb} / ${levels[level + 1].bb} — Level ${level + 2}`;
+      } else {
+        document.getElementById("next").textContent = "Final level";
+      }
     }
 
     function tick() {
@@ -126,27 +139,4 @@
 
     function nextLevel() {
       pause();
-      if (level < levels.length - 1) {
-        level++;
-        remaining = levels[level].min * 60;
-        render();
-        start();
-      }
-    }
-
-    function adjust(sec) {
-      remaining = Math.max(0, remaining + sec);
-      render();
-    }
-
-    function resetGame() {
-      pause();
-      level = 0;
-      remaining = levels[0].min * 60;
-      render();
-    }
-
-    render();
-  </script>
-</body>
-</html>
+      if (level < levels
