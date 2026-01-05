@@ -6,75 +6,86 @@
   <title>Poker Clock</title>
 
   <style>
-    body {
-      margin: 0;
-      background: #111;
-      color: #fff;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
+    body{
+      margin:0;
+      background:#111;
+      color:#fff;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      user-select:none;
+      -webkit-user-select:none;
+      touch-action:manipulation;
     }
 
-    .clock {
-      text-align: center;
-      width: 100%;
-      padding: 2vh 2vw;
-      box-sizing: border-box;
+    .clock{
+      text-align:center;
+      width:100%;
+      padding:2vh 2vw;
+      box-sizing:border-box;
     }
 
-    .time {
-      font-size: 20vw;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      line-height: 1;
+    /* --- TIME: fixed-width digits so ":" stays centered --- */
+    .time{
+      font-size:20vw;
+      font-weight:800;
+      letter-spacing:0.02em;
+      line-height:1;
+      font-variant-numeric: tabular-nums; /* key for stable colon */
+      font-feature-settings: "tnum" 1;    /* fallback */
+      display:inline-block;
+      min-width: 7ch; /* keeps layout stable */
+      text-align:center;
     }
 
-    .row {
-      font-size: 5vw;
-      margin-top: 1.5vh;
-      opacity: 0.9;
+    .info{
+      margin-top:1.5vh;
+      font-size:4.2vw;
+      opacity:0.92;
+      line-height:1.2;
+    }
+    .info .label{
+      opacity:0.7;
+      margin-right:0.5ch;
     }
 
-    .next {
-      font-size: 3.5vw;
-      margin-top: 0.8vh;
-      opacity: 0.65;
+    .buttons{
+      margin-top:3vh;
+      display:flex;
+      flex-direction:column;
+      gap:1.2vh;
+      align-items:center;
     }
 
-    .buttons {
-      margin-top: 3vh;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 1vw;
+    .btnrow{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:1vw;
+      width:100%;
     }
 
-    button {
-      font-size: 3vw;
-      padding: 1.2vw 2.2vw;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
+    button{
+      font-size:3vw;
+      padding:1.2vw 2.2vw;
+      border-radius:12px;
+      border:none;
+      cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
     }
+    .primary{ background:#4CAF50; color:#000; }
+    .secondary{ background:#ddd; color:#000; }
+    .danger{ background:#f44336; color:#000; }
 
-    .primary { background: #4CAF50; color: #000; }
-    .secondary { background: #ddd; color: #000; }
-    .danger { background: #f44336; color: #000; }
-
-    /* Simple error box if something breaks */
-    .error {
-      margin-top: 2vh;
-      font-size: 3vw;
-      color: #ffb3b3;
-      display: none;
-      white-space: pre-wrap;
-      opacity: 0.95;
+    .error{
+      margin-top:2vh;
+      font-size:3vw;
+      color:#ffb3b3;
+      display:none;
+      white-space:pre-wrap;
+      opacity:0.95;
     }
   </style>
 </head>
@@ -83,17 +94,28 @@
   <div class="clock">
     <div class="time" id="time">10:00</div>
 
-    <div class="row" id="current">25 / 50 — Level 1</div>
-    <div class="next" id="next">Next: 50 / 100 — Level 2</div>
+    <div class="info" id="currentInfo">
+      <span class="label">Current Blinds</span><span id="currentBlinds">25 / 50</span>
+    </div>
+    <div class="info" id="nextInfo">
+      <span class="label">Next Blinds</span><span id="nextBlinds">50 / 100</span>
+    </div>
 
     <div class="buttons">
-      <button class="primary" id="btnStart">Start</button>
-      <button class="secondary" id="btnPause">Pause</button>
-      <button class="secondary" id="btnNext">Next level</button>
-      <button class="secondary" id="btnResetLevel">Reset level</button>
-      <button class="secondary" id="btnPlus">+1 min</button>
-      <button class="secondary" id="btnMinus">−1 min</button>
-      <button class="danger" id="btnResetAll">Reset all</button>
+      <!-- Row 1: Start / Pause / Reset timer -->
+      <div class="btnrow">
+        <button class="primary" id="btnStart">Start</button>
+        <button class="secondary" id="btnPause">Pause</button>
+        <button class="danger" id="btnResetTimer">Reset timer</button>
+      </div>
+
+      <!-- Row 2: the rest -->
+      <div class="btnrow">
+        <button class="secondary" id="btnNext">Next level</button>
+        <button class="secondary" id="btnResetLevel">Reset level</button>
+        <button class="secondary" id="btnPlus">+1 min</button>
+        <button class="secondary" id="btnMinus">−1 min</button>
+      </div>
     </div>
 
     <div class="error" id="err"></div>
@@ -118,95 +140,108 @@
     let remaining = levels[0].min * 60;
     let timer = null;
 
-    // --- UI helpers ---
+    // --- UI refs ---
     const elTime = document.getElementById("time");
-    const elCurrent = document.getElementById("current");
-    const elNext = document.getElementById("next");
+    const elCurrentBlinds = document.getElementById("currentBlinds");
+    const elNextBlinds = document.getElementById("nextBlinds");
     const elErr = document.getElementById("err");
 
-    function showError(msg) {
+    function showError(msg){
       elErr.style.display = "block";
       elErr.textContent = msg;
     }
+    window.addEventListener("error", (e) => showError("Error: " + (e.message || "Unknown")));
 
-    // Catch unexpected errors so you SEE something
-    window.addEventListener("error", (e) => {
-      showError("Error: " + (e.message || "Unknown") );
-    });
+    function fmtMMSS(sec){
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+    }
 
-    function render() {
-      const m = Math.floor(remaining / 60);
-      const s = remaining % 60;
-      elTime.textContent = String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+    function render(){
+      elTime.textContent = fmtMMSS(remaining);
 
-      elCurrent.textContent = levels[level].sb + " / " + levels[level].bb + " — Level " + (level + 1);
+      elCurrentBlinds.textContent = `${levels[level].sb} / ${levels[level].bb}`;
 
       if (level < levels.length - 1) {
-        elNext.textContent = "Next: " + levels[level + 1].sb + " / " + levels[level + 1].bb + " — Level " + (level + 2);
+        elNextBlinds.textContent = `${levels[level + 1].sb} / ${levels[level + 1].bb}`;
       } else {
-        elNext.textContent = "Final level";
+        elNextBlinds.textContent = `—`;
       }
     }
 
-    function tick() {
+    function tick(){
       if (remaining > 0) {
         remaining--;
         render();
       } else {
-        nextLevel();
+        // When time hits 00:00, auto-advance level, reset to 10:00, and PAUSE.
+        advanceLevelAndPause();
       }
     }
 
-    function start() {
+    function start(){
       if (timer) return;
       timer = setInterval(tick, 1000);
     }
 
-    function pause() {
+    function pause(){
       if (!timer) return;
       clearInterval(timer);
       timer = null;
     }
 
-    function nextLevel() {
+    // --- Requested behavior: level changes -> reset to 10:00 and PAUSE (no auto-start) ---
+    function advanceLevelAndPause(){
       pause();
+
       if (level < levels.length - 1) {
         level++;
-        remaining = levels[level].min * 60;
+        remaining = levels[level].min * 60; // resets to 10 min (or per level)
         render();
-        start();
+        // stays paused; user must press Start
+      } else {
+        // final level reached: keep paused at 00:00
+        remaining = 0;
+        render();
       }
     }
 
-    function resetLevel() {
+    function nextLevel(){
+      // Manual next: also resets time and pauses
+      advanceLevelAndPause();
+    }
+
+    function resetLevel(){
+      // Reset current level timer to full duration, and PAUSE (so user decides when to start)
       pause();
       remaining = levels[level].min * 60;
       render();
-      start();
     }
 
-    function adjust(sec) {
+    function adjust(sec){
       remaining = Math.max(0, remaining + sec);
       render();
     }
 
-    function resetAll() {
+    // "Reset timer" = go back to Level 1 and pause at 10:00
+    function resetTimer(){
       pause();
       level = 0;
       remaining = levels[0].min * 60;
       render();
     }
 
-    // Bind buttons AFTER everything is defined
+    // Bind buttons
     document.getElementById("btnStart").addEventListener("click", start);
     document.getElementById("btnPause").addEventListener("click", pause);
+    document.getElementById("btnResetTimer").addEventListener("click", resetTimer);
+
     document.getElementById("btnNext").addEventListener("click", nextLevel);
     document.getElementById("btnResetLevel").addEventListener("click", resetLevel);
     document.getElementById("btnPlus").addEventListener("click", () => adjust(60));
     document.getElementById("btnMinus").addEventListener("click", () => adjust(-60));
-    document.getElementById("btnResetAll").addEventListener("click", resetAll);
 
-    // First paint
     render();
   </script>
 </body>
