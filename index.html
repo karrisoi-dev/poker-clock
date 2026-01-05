@@ -10,7 +10,7 @@
       margin:0;
       background:#111;
       color:#fff;
-      font-family: "Arial Black", Arial, Helvetica, sans-serif;
+      font-family: Tahoma, Arial, Helvetica, sans-serif;
       display:flex;
       justify-content:center;
       align-items:center;
@@ -114,7 +114,7 @@
     .red{ background:#f44336; color:#000; }
     .gray{ background:#cfcfcf; color:#000; }
 
-    /* Settings button */
+    /* Settings button (smaller) */
     .topbar{
       position:fixed;
       top:1vh;
@@ -122,13 +122,13 @@
       z-index:9000;
     }
     .settingsBtn{
-      font-size:2.6vw;
-      padding:1vw 1.6vw;
-      border-radius:12px;
+      font-size:1.9vw;              /* smaller */
+      padding:0.65vw 1.0vw;         /* smaller */
+      border-radius:10px;
       background:#2b2b2b;
       color:#fff;
       border:1px solid rgba(255,255,255,0.15);
-      box-shadow: 0 0.6vw 1.2vw rgba(0,0,0,0.35);
+      box-shadow: 0 0.5vw 1.0vw rgba(0,0,0,0.35);
     }
     .settingsBtn:active{
       transform: scale(0.97);
@@ -136,7 +136,7 @@
       box-shadow: 0 0.2vw 0.6vw rgba(0,0,0,0.35);
     }
 
-    /* Settings modal */
+    /* Settings modal (smaller) */
     #modalOverlay{
       position:fixed;
       inset:0;
@@ -145,35 +145,35 @@
       align-items:center;
       justify-content:center;
       z-index:9500;
-      padding:3vh 3vw;
+      padding:2vh 2vw;
       box-sizing:border-box;
     }
     #modal{
-      width:min(92vw, 720px);
+      width:min(80vw, 520px);       /* smaller */
       background:#1b1b1b;
       border:1px solid rgba(255,255,255,0.12);
-      border-radius:18px;
-      padding:3vh 3vw;
+      border-radius:16px;
+      padding:2.2vh 2.2vw;          /* smaller */
       box-shadow: 0 2vw 4vw rgba(0,0,0,0.5);
       text-align:left;
     }
     #modal h2{
-      margin:0 0 2vh 0;
-      font-size:4vw;
+      margin:0 0 1.6vh 0;
+      font-size:3.2vw;              /* smaller */
     }
     .field{
-      margin:2vh 0;
+      margin:1.6vh 0;               /* smaller */
     }
     .field label{
       display:block;
-      font-size:3vw;
+      font-size:2.6vw;              /* smaller */
       opacity:0.85;
-      margin-bottom:0.8vh;
+      margin-bottom:0.7vh;
     }
     select{
       width:100%;
-      font-size:3vw;
-      padding:1.2vh 1vw;
+      font-size:2.6vw;              /* smaller */
+      padding:1.0vh 1vw;            /* smaller */
       border-radius:12px;
       border:1px solid rgba(255,255,255,0.15);
       background:#111;
@@ -181,21 +181,21 @@
       font-family: inherit;
     }
     .modalButtons{
-      margin-top:3vh;
+      margin-top:2.2vh;
       display:flex;
       gap:1vw;
       justify-content:flex-end;
       flex-wrap:wrap;
     }
     .smallBtn{
-      font-size:2.8vw;
-      padding:1vw 1.8vw;
+      font-size:2.4vw;              /* smaller */
+      padding:0.8vw 1.4vw;          /* smaller */
       border-radius:12px;
       border:none;
       cursor:pointer;
       font-family: inherit;
       transition: transform 80ms ease, filter 80ms ease, box-shadow 80ms ease;
-      box-shadow: 0 0.6vw 1.2vw rgba(0,0,0,0.35);
+      box-shadow: 0 0.5vw 1.0vw rgba(0,0,0,0.35);
     }
     .smallBtn:active{
       transform: scale(0.97);
@@ -207,8 +207,8 @@
     .smallRed{ background:#f44336; color:#000; }
 
     .hint{
-      margin-top:1vh;
-      font-size:2.6vw;
+      margin-top:0.8vh;
+      font-size:2.1vw;              /* smaller */
       opacity:0.55;
       line-height:1.25;
     }
@@ -257,7 +257,6 @@
     </div>
 
     <div class="buttons">
-      <!-- ROW 1 -->
       <div class="btnrow">
         <button class="green" id="btnStart">Start</button>
         <button class="orange" id="btnPause">Pause</button>
@@ -265,7 +264,6 @@
         <button class="red" id="btnResetAll">Reset All</button>
       </div>
 
-      <!-- ROW 2 -->
       <div class="btnrow">
         <button class="gray" id="btnPrev">Previous</button>
         <button class="gray" id="btnNext">Next</button>
@@ -278,9 +276,6 @@
   </div>
 
   <script>
-    // -----------------------
-    // Levels (base schedule)
-    // -----------------------
     const levels = [
       { sb:25, bb:50 },
       { sb:50, bb:100 },
@@ -293,43 +288,29 @@
       { sb:800, bb:1600 }
     ];
 
-    // -----------------------
-    // Settings (persisted)
-    // -----------------------
     const SETTINGS_KEY = "pokerClockSettings_v1";
-    const DEFAULT_SETTINGS = {
-      roundMinutes: 10,
-      maxLevelIndex: levels.length - 1 // last index
-    };
+    const DEFAULT_SETTINGS = { roundMinutes: 10, maxLevelIndex: levels.length - 1 };
 
-    function loadSettings() {
-      try {
+    function loadSettings(){
+      try{
         const raw = localStorage.getItem(SETTINGS_KEY);
-        if (!raw) return { ...DEFAULT_SETTINGS };
-        const parsed = JSON.parse(raw);
-        const roundMinutes = Number(parsed.roundMinutes);
-        const maxLevelIndex = Number(parsed.maxLevelIndex);
+        if(!raw) return { ...DEFAULT_SETTINGS };
+        const p = JSON.parse(raw);
+        const roundMinutes = Number(p.roundMinutes);
+        const maxLevelIndex = Number(p.maxLevelIndex);
 
-        const safe = { ...DEFAULT_SETTINGS };
-
-        if (Number.isFinite(roundMinutes) && roundMinutes >= 1 && roundMinutes <= 60) safe.roundMinutes = roundMinutes;
-        if (Number.isFinite(maxLevelIndex) && maxLevelIndex >= 0 && maxLevelIndex < levels.length) safe.maxLevelIndex = maxLevelIndex;
-
-        return safe;
-      } catch {
+        const s = { ...DEFAULT_SETTINGS };
+        if(Number.isFinite(roundMinutes) && roundMinutes >= 1 && roundMinutes <= 60) s.roundMinutes = roundMinutes;
+        if(Number.isFinite(maxLevelIndex) && maxLevelIndex >= 0 && maxLevelIndex < levels.length) s.maxLevelIndex = maxLevelIndex;
+        return s;
+      }catch{
         return { ...DEFAULT_SETTINGS };
       }
     }
-
-    function saveSettings(s) {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-    }
+    function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
 
     let settings = loadSettings();
 
-    // -----------------------
-    // State
-    // -----------------------
     let level = 0;
     let remaining = settings.roundMinutes * 60;
     let timer = null;
@@ -337,9 +318,6 @@
     let didWarn60 = false;
     let lastFlashSecond = null;
 
-    // -----------------------
-    // UI
-    // -----------------------
     const elTime = document.getElementById("time");
     const elCurrentBlinds = document.getElementById("currentBlinds");
     const elNextBlinds = document.getElementById("nextBlinds");
@@ -354,11 +332,8 @@
     const btnSaveSettings = document.getElementById("btnSaveSettings");
     const btnResetSettings = document.getElementById("btnResetSettings");
 
-    function showError(msg){
-      elErr.style.display = "block";
-      elErr.textContent = msg;
-    }
-    window.addEventListener("error", (e) => showError("Error: " + (e.message || "Unknown")));
+    function showError(msg){ elErr.style.display="block"; elErr.textContent = msg; }
+    window.addEventListener("error", (e)=> showError("Error: " + (e.message || "Unknown")));
 
     function fmt(sec){
       const m = Math.floor(sec/60);
@@ -366,143 +341,110 @@
       return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
     }
 
-    function maxIndex() {
-      return Math.min(settings.maxLevelIndex, levels.length - 1);
-    }
-
-    function canGoNext() {
-      return level < maxIndex();
-    }
+    function maxIndex(){ return Math.min(settings.maxLevelIndex, levels.length-1); }
+    function canGoNext(){ return level < maxIndex(); }
 
     function render(){
       elTime.textContent = fmt(remaining);
-
-      // last 10 seconds = red (excluding 00:00)
       if (remaining <= 10 && remaining > 0) elTime.classList.add("urgent");
       else elTime.classList.remove("urgent");
 
       elCurrentBlinds.textContent = `${levels[level].sb} / ${levels[level].bb}`;
-
-      if (level < maxIndex()) {
-        elNextBlinds.textContent = `${levels[level+1].sb} / ${levels[level+1].bb}`;
-      } else {
-        elNextBlinds.textContent = "—";
-      }
+      elNextBlinds.textContent = level < maxIndex() ? `${levels[level+1].sb} / ${levels[level+1].bb}` : "—";
     }
 
-    function flashWhite_() {
+    function flashWhite_(){
       elFlash.classList.add("on");
-      setTimeout(() => elFlash.classList.remove("on"), 110);
+      setTimeout(()=> elFlash.classList.remove("on"), 110);
     }
 
-    // -----------------------
-    // Audio (Web Audio)
-    // -----------------------
     let audioCtx = null;
-
     async function ensureAudioUnlocked_(){
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === "suspended") await audioCtx.resume();
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === "suspended") await audioCtx.resume();
     }
 
-    function clickAt_(baseTime, tOffsetSec, gain=0.12) {
+    function clickAt_(baseTime, tOffsetSec, gain=0.12){
       const t = baseTime + tOffsetSec;
-
       const osc = audioCtx.createOscillator();
       osc.type = "square";
       osc.frequency.setValueAtTime(1800, t);
 
       const g = audioCtx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(gain, t + 0.005);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+      g.gain.linearRampToValueAtTime(gain, t+0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+0.07);
 
       osc.connect(g);
       g.connect(audioCtx.destination);
-
       osc.start(t);
-      osc.stop(t + 0.08);
+      osc.stop(t+0.08);
     }
 
-    // 60s warning: 6 clicks, slower spacing
     function sixClicks60_(){
-      if (!audioCtx) return;
+      if(!audioCtx) return;
       const base = audioCtx.currentTime;
-
       const spacing = 0.28;
-      for (let i = 0; i < 6; i++) {
-        clickAt_(base, i * spacing, 0.11);
-      }
+      for(let i=0;i<6;i++) clickAt_(base, i*spacing, 0.11);
     }
 
     function sirenOnce_(startTime, gainPeak=0.20){
       const osc = audioCtx.createOscillator();
       osc.type = "triangle";
-
       const g = audioCtx.createGain();
       g.gain.setValueAtTime(0.0001, startTime);
-      g.gain.linearRampToValueAtTime(gainPeak, startTime + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, startTime + 1.2);
+      g.gain.linearRampToValueAtTime(gainPeak, startTime+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, startTime+1.2);
 
       osc.connect(g);
       g.connect(audioCtx.destination);
 
       osc.frequency.setValueAtTime(600, startTime);
-      osc.frequency.linearRampToValueAtTime(1250, startTime + 0.3);
-      osc.frequency.linearRampToValueAtTime(650,  startTime + 0.6);
-      osc.frequency.linearRampToValueAtTime(1300, startTime + 0.9);
-      osc.frequency.linearRampToValueAtTime(700,  startTime + 1.2);
+      osc.frequency.linearRampToValueAtTime(1250, startTime+0.3);
+      osc.frequency.linearRampToValueAtTime(650,  startTime+0.6);
+      osc.frequency.linearRampToValueAtTime(1300, startTime+0.9);
+      osc.frequency.linearRampToValueAtTime(700,  startTime+1.2);
 
       osc.start(startTime);
-      osc.stop(startTime + 1.25);
+      osc.stop(startTime+1.25);
     }
 
     function sirenTimeUp_(){
-      if (!audioCtx) return;
+      if(!audioCtx) return;
       const base = audioCtx.currentTime;
-      const gap = 0.20;
-      const dur = 1.25;
-
-      for (let i = 0; i < 3; i++) {
-        sirenOnce_(base + i * (dur + gap), 0.20);
-      }
+      const gap = 0.20, dur = 1.25;
+      for(let i=0;i<3;i++) sirenOnce_(base + i*(dur+gap), 0.20);
     }
 
-    // -----------------------
-    // Clock logic
-    // -----------------------
     function tick(){
-      if (remaining > 0) {
+      if(remaining>0){
         remaining--;
         render();
 
-        // Flash on last 5 seconds
         if (remaining <= 5 && remaining > 0 && lastFlashSecond !== remaining) {
           lastFlashSecond = remaining;
           flashWhite_();
         }
 
-        // 60s warning (once per level)
-        if (remaining === 60 && !didWarn60) {
+        if(remaining===60 && !didWarn60){
           didWarn60 = true;
           sixClicks60_();
         }
 
-        if (remaining === 0) {
+        if(remaining===0){
           sirenTimeUp_();
           advanceLevelAndPause();
         }
-      } else {
+      }else{
         sirenTimeUp_();
         advanceLevelAndPause();
       }
     }
 
     function start(){
-      if (timer) return;
+      if(timer) return;
       timer = setInterval(tick,1000);
     }
-
     function pause(){
       if(!timer) return;
       clearInterval(timer);
@@ -511,18 +453,15 @@
 
     function advanceLevelAndPause(){
       pause();
-
-      if (canGoNext()) {
+      if(canGoNext()){
         level++;
-        remaining = settings.roundMinutes * 60;
-      } else {
+        remaining = settings.roundMinutes*60;
+      }else{
         remaining = 0;
       }
-
-      didWarn60 = false;
-      lastFlashSecond = null;
+      didWarn60=false;
+      lastFlashSecond=null;
       render();
-      // stays paused; user must press Start
     }
 
     function next(){ advanceLevelAndPause(); }
@@ -531,86 +470,75 @@
       pause();
       if(level>0){
         level--;
-        remaining = settings.roundMinutes * 60;
+        remaining = settings.roundMinutes*60;
       }
-      didWarn60 = false;
-      lastFlashSecond = null;
+      didWarn60=false;
+      lastFlashSecond=null;
       render();
     }
 
     function resetLevel(){
       pause();
-      remaining = settings.roundMinutes * 60;
-      didWarn60 = false;
-      lastFlashSecond = null;
+      remaining = settings.roundMinutes*60;
+      didWarn60=false;
+      lastFlashSecond=null;
       render();
     }
 
     function resetAll(){
       pause();
-      level = 0;
-      remaining = settings.roundMinutes * 60;
-      didWarn60 = false;
-      lastFlashSecond = null;
+      level=0;
+      remaining = settings.roundMinutes*60;
+      didWarn60=false;
+      lastFlashSecond=null;
       render();
     }
 
     function adjust(sec){
-      remaining = Math.max(0, remaining + sec);
-      lastFlashSecond = null;
+      remaining = Math.max(0, remaining+sec);
+      lastFlashSecond=null;
       render();
     }
 
-    // -----------------------
-    // Settings UI
-    // -----------------------
     function openSettings(){
-      // populate selects
-      selMinutes.innerHTML = "";
-      const minuteOptions = [5, 8, 10, 12, 15, 20, 25, 30];
-      for (const m of minuteOptions) {
-        const opt = document.createElement("option");
-        opt.value = String(m);
-        opt.textContent = `${m} minutes`;
+      selMinutes.innerHTML="";
+      const minuteOptions=[5,8,10,12,15,20,25,30];
+      for(const m of minuteOptions){
+        const opt=document.createElement("option");
+        opt.value=String(m);
+        opt.textContent=`${m} minutes`;
         selMinutes.appendChild(opt);
       }
 
-      selMaxBlind.innerHTML = "";
-      for (let i = 0; i < levels.length; i++) {
-        const opt = document.createElement("option");
-        opt.value = String(i);
-        opt.textContent = `${levels[i].sb} / ${levels[i].bb}`;
+      selMaxBlind.innerHTML="";
+      for(let i=0;i<levels.length;i++){
+        const opt=document.createElement("option");
+        opt.value=String(i);
+        opt.textContent=`${levels[i].sb} / ${levels[i].bb}`;
         selMaxBlind.appendChild(opt);
       }
 
-      selMinutes.value = String(settings.roundMinutes);
-      selMaxBlind.value = String(settings.maxLevelIndex);
+      selMinutes.value=String(settings.roundMinutes);
+      selMaxBlind.value=String(settings.maxLevelIndex);
 
-      modalOverlay.style.display = "flex";
+      modalOverlay.style.display="flex";
     }
 
-    function closeSettings(){
-      modalOverlay.style.display = "none";
-    }
+    function closeSettings(){ modalOverlay.style.display="none"; }
 
     function applySettingsFromModal(){
       const newMinutes = Number(selMinutes.value);
       const newMaxIndex = Number(selMaxBlind.value);
 
-      settings = {
-        roundMinutes: newMinutes,
-        maxLevelIndex: newMaxIndex
-      };
+      settings = { roundMinutes: newMinutes, maxLevelIndex: newMaxIndex };
       saveSettings(settings);
 
-      // Ensure current level isn't beyond the max
-      if (level > maxIndex()) level = maxIndex();
+      if(level > maxIndex()) level = maxIndex();
 
-      // Reset timer to the new round length and pause
       pause();
-      remaining = settings.roundMinutes * 60;
-      didWarn60 = false;
-      lastFlashSecond = null;
+      remaining = settings.roundMinutes*60;
+      didWarn60=false;
+      lastFlashSecond=null;
       render();
     }
 
@@ -618,36 +546,25 @@
       settings = { ...DEFAULT_SETTINGS };
       saveSettings(settings);
 
-      // Reset timer to defaults and pause
       pause();
-      level = 0;
-      remaining = settings.roundMinutes * 60;
-      didWarn60 = false;
-      lastFlashSecond = null;
+      level=0;
+      remaining = settings.roundMinutes*60;
+      didWarn60=false;
+      lastFlashSecond=null;
       render();
 
-      // reflect in modal if open
-      selMinutes.value = String(settings.roundMinutes);
-      selMaxBlind.value = String(settings.maxLevelIndex);
+      selMinutes.value=String(settings.roundMinutes);
+      selMaxBlind.value=String(settings.maxLevelIndex);
     }
 
     btnSettings.addEventListener("click", openSettings);
     btnCancelSettings.addEventListener("click", closeSettings);
-    btnSaveSettings.addEventListener("click", () => {
-      applySettingsFromModal();
-      closeSettings();
-    });
+    btnSaveSettings.addEventListener("click", ()=>{ applySettingsFromModal(); closeSettings(); });
     btnResetSettings.addEventListener("click", resetSettings);
 
-    // tap outside modal to close
-    modalOverlay.addEventListener("click", (e) => {
-      if (e.target === modalOverlay) closeSettings();
-    });
+    modalOverlay.addEventListener("click",(e)=>{ if(e.target===modalOverlay) closeSettings(); });
 
-    // -----------------------
-    // Bind buttons
-    // -----------------------
-    document.getElementById("btnStart").addEventListener("click", async () => {
+    document.getElementById("btnStart").addEventListener("click", async ()=>{
       await ensureAudioUnlocked_();
       start();
     });
@@ -658,10 +575,9 @@
 
     document.getElementById("btnPrev").addEventListener("click", previous);
     document.getElementById("btnNext").addEventListener("click", next);
-    document.getElementById("btnPlus").addEventListener("click", () => adjust(60));
-    document.getElementById("btnMinus").addEventListener("click", () => adjust(-60));
+    document.getElementById("btnPlus").addEventListener("click", ()=>adjust(60));
+    document.getElementById("btnMinus").addEventListener("click", ()=>adjust(-60));
 
-    // Initial paint
     render();
   </script>
 </body>
