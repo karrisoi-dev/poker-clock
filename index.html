@@ -84,4 +84,130 @@
     <div class="time" id="time">10:00</div>
 
     <div class="row" id="current">25 / 50 — Level 1</div>
-    <div class="next" id="next">
+    <div class="next" id="next">Next: 50 / 100 — Level 2</div>
+
+    <div class="buttons">
+      <button class="primary" id="btnStart">Start</button>
+      <button class="secondary" id="btnPause">Pause</button>
+      <button class="secondary" id="btnNext">Next level</button>
+      <button class="secondary" id="btnResetLevel">Reset level</button>
+      <button class="secondary" id="btnPlus">+1 min</button>
+      <button class="secondary" id="btnMinus">−1 min</button>
+      <button class="danger" id="btnResetAll">Reset all</button>
+    </div>
+
+    <div class="error" id="err"></div>
+  </div>
+
+  <script>
+    // --- Data ---
+    const levels = [
+      { sb:25, bb:50, min:10 },
+      { sb:50, bb:100, min:10 },
+      { sb:100, bb:200, min:10 },
+      { sb:150, bb:300, min:10 },
+      { sb:200, bb:400, min:10 },
+      { sb:300, bb:600, min:10 },
+      { sb:400, bb:800, min:10 },
+      { sb:600, bb:1200, min:10 },
+      { sb:800, bb:1600, min:10 }
+    ];
+
+    // --- State ---
+    let level = 0;
+    let remaining = levels[0].min * 60;
+    let timer = null;
+
+    // --- UI helpers ---
+    const elTime = document.getElementById("time");
+    const elCurrent = document.getElementById("current");
+    const elNext = document.getElementById("next");
+    const elErr = document.getElementById("err");
+
+    function showError(msg) {
+      elErr.style.display = "block";
+      elErr.textContent = msg;
+    }
+
+    // Catch unexpected errors so you SEE something
+    window.addEventListener("error", (e) => {
+      showError("Error: " + (e.message || "Unknown") );
+    });
+
+    function render() {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      elTime.textContent = String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+
+      elCurrent.textContent = levels[level].sb + " / " + levels[level].bb + " — Level " + (level + 1);
+
+      if (level < levels.length - 1) {
+        elNext.textContent = "Next: " + levels[level + 1].sb + " / " + levels[level + 1].bb + " — Level " + (level + 2);
+      } else {
+        elNext.textContent = "Final level";
+      }
+    }
+
+    function tick() {
+      if (remaining > 0) {
+        remaining--;
+        render();
+      } else {
+        nextLevel();
+      }
+    }
+
+    function start() {
+      if (timer) return;
+      timer = setInterval(tick, 1000);
+    }
+
+    function pause() {
+      if (!timer) return;
+      clearInterval(timer);
+      timer = null;
+    }
+
+    function nextLevel() {
+      pause();
+      if (level < levels.length - 1) {
+        level++;
+        remaining = levels[level].min * 60;
+        render();
+        start();
+      }
+    }
+
+    function resetLevel() {
+      pause();
+      remaining = levels[level].min * 60;
+      render();
+      start();
+    }
+
+    function adjust(sec) {
+      remaining = Math.max(0, remaining + sec);
+      render();
+    }
+
+    function resetAll() {
+      pause();
+      level = 0;
+      remaining = levels[0].min * 60;
+      render();
+    }
+
+    // Bind buttons AFTER everything is defined
+    document.getElementById("btnStart").addEventListener("click", start);
+    document.getElementById("btnPause").addEventListener("click", pause);
+    document.getElementById("btnNext").addEventListener("click", nextLevel);
+    document.getElementById("btnResetLevel").addEventListener("click", resetLevel);
+    document.getElementById("btnPlus").addEventListener("click", () => adjust(60));
+    document.getElementById("btnMinus").addEventListener("click", () => adjust(-60));
+    document.getElementById("btnResetAll").addEventListener("click", resetAll);
+
+    // First paint
+    render();
+  </script>
+</body>
+</html>
