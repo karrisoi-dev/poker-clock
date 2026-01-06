@@ -94,13 +94,17 @@
     .red{ background:#f44336; color:#000; }
     .gray{ background:#cfcfcf; color:#000; }
 
+    /* Top buttons */
     .topbar{
       position:fixed;
       top:1vh;
       right:1vw;
       z-index:1000;
+      display:flex;
+      gap:0.8vw;
+      align-items:center;
     }
-    .settingsBtn{
+    .topbtn{
       font-size:1.9vw;
       padding:0.6vw 1vw;
       border-radius:10px;
@@ -108,9 +112,11 @@
       color:#fff;
       border:1px solid rgba(255,255,255,0.12);
     }
+    .topbtn:active{ transform: scale(0.97); filter: brightness(0.92); }
+    .topbtn, .topbtn *{ color:#fff; }
 
     /* Modal overlay (only this is transparent) */
-    #modalOverlay{
+    .modalOverlay{
       position:fixed;
       inset:0;
       background:rgba(0,0,0,0.6);
@@ -123,7 +129,7 @@
     }
 
     /* Modal itself: solid */
-    #modal{
+    .modal{
       width:min(80vw, 520px);
       background:#1b1b1b;
       opacity:1;
@@ -132,18 +138,18 @@
       box-shadow: 0 20px 50px rgba(0,0,0,0.7);
       color:#fff;
     }
-    #modal h2{
+    .modal h2{
       margin:0 0 1.2vh 0;
       font-size:3.2vw;
     }
-    #modal label{
+    .modal label{
       display:block;
       margin-top:1.4vh;
       font-size:2.6vw;
       opacity:0.9;
     }
 
-    select{
+    select, input{
       width:100%;
       font-size:2.6vw;
       padding:1vh;
@@ -155,6 +161,7 @@
       -webkit-appearance:none;
       appearance:none;
       opacity:1;
+      box-sizing:border-box;
     }
 
     .modalButtons{
@@ -165,8 +172,54 @@
       flex-wrap:wrap;
     }
 
-    #modal button.gray{ background:#cfcfcf; color:#000; }
-    #modal button.green{ background:#4CAF50; color:#000; }
+    .muted{
+      opacity:0.75;
+      font-size:2.4vw;
+      margin-top:0.8vh;
+      line-height:1.25;
+    }
+
+    .section{
+      margin-top:1.6vh;
+      padding-top:1.2vh;
+      border-top:1px solid rgba(255,255,255,0.12);
+    }
+
+    .kv{
+      display:flex;
+      justify-content:space-between;
+      gap:2vw;
+      font-size:2.6vw;
+      margin-top:0.6vh;
+    }
+    .kv .k{ opacity:0.8; }
+    .kv .v{ text-align:right; }
+
+    .stackline{
+      display:flex;
+      justify-content:space-between;
+      gap:2vw;
+      font-size:2.6vw;
+      margin-top:0.4vh;
+      opacity:0.95;
+    }
+    .stackline .left{ opacity:0.9; }
+    .stackline .right{ opacity:0.9; }
+
+    .pillrow{
+      display:flex;
+      gap:1vw;
+      flex-wrap:wrap;
+      margin-top:0.8vh;
+    }
+    .pill{
+      background:#111;
+      border:1px solid rgba(255,255,255,0.14);
+      border-radius:999px;
+      padding:0.5vh 1vw;
+      font-size:2.4vw;
+      opacity:0.95;
+    }
   </style>
 </head>
 
@@ -174,11 +227,13 @@
 <div id="flashOverlay"></div>
 
 <div class="topbar">
-  <button class="settingsBtn" id="btnSettings" type="button">⚙️ Settings</button>
+  <button class="topbtn" id="btnChips" type="button">🪙 Chips</button>
+  <button class="topbtn" id="btnSettings" type="button">⚙️ Settings</button>
 </div>
 
-<div id="modalOverlay" role="dialog" aria-modal="true">
-  <div id="modal">
+<!-- SETTINGS MODAL -->
+<div class="modalOverlay" id="settingsOverlay" role="dialog" aria-modal="true">
+  <div class="modal">
     <h2>Settings</h2>
 
     <label for="selMinutes">Round length</label>
@@ -190,6 +245,70 @@
     <div class="modalButtons">
       <button class="gray" id="btnCancelSettings" type="button">Cancel</button>
       <button class="green" id="btnSaveSettings" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHIPS MODAL -->
+<div class="modalOverlay" id="chipsOverlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h2>Chips</h2>
+
+    <div class="section" style="border-top:none; padding-top:0; margin-top:0;">
+      <div class="kv">
+        <div class="k">Case total chips</div>
+        <div class="v"><span id="caseTotalText">750</span></div>
+      </div>
+
+      <label for="inpCaseTotal" style="margin-top:1.2vh;">Edit case total (chips)</label>
+      <input id="inpCaseTotal" type="number" min="0" step="1" inputmode="numeric" />
+      <div class="muted">This is the total number of chips in your case (e.g. 750).</div>
+    </div>
+
+    <div class="section">
+      <div class="kv">
+        <div class="k">Buy-in stack</div>
+        <div class="v"><span id="buyinSummary">—</span></div>
+      </div>
+      <div id="buyinLines"></div>
+      <div class="pillrow" id="buyinPills"></div>
+    </div>
+
+    <div class="section">
+      <div class="kv">
+        <div class="k">Re-buy stack</div>
+        <div class="v"><span id="rebuySummary">—</span></div>
+      </div>
+      <div id="rebuyLines"></div>
+      <div class="pillrow" id="rebuyPills"></div>
+      <div class="muted">Re-buy uses the same stack as buy-in (you can change this later if you want).</div>
+    </div>
+
+    <div class="section">
+      <div class="kv">
+        <div class="k">Quick calculator</div>
+        <div class="v"></div>
+      </div>
+
+      <label for="inpPlayers">Players (buy-ins)</label>
+      <input id="inpPlayers" type="number" min="0" step="1" inputmode="numeric" />
+
+      <label for="inpRebuys">Re-buys</label>
+      <input id="inpRebuys" type="number" min="0" step="1" inputmode="numeric" />
+
+      <div class="kv" style="margin-top:1.2vh;">
+        <div class="k">Chips needed</div>
+        <div class="v" id="chipsNeeded">—</div>
+      </div>
+      <div class="kv">
+        <div class="k">Chips remaining</div>
+        <div class="v" id="chipsRemaining">—</div>
+      </div>
+    </div>
+
+    <div class="modalButtons">
+      <button class="gray" id="btnCloseChips" type="button">Close</button>
+      <button class="green" id="btnSaveChips" type="button">Save</button>
     </div>
   </div>
 </div>
@@ -242,7 +361,6 @@ function loadSettings(){
     if(Number.isFinite(rm) && rm>=1 && rm<=60) s.roundMinutes = rm;
     if(Number.isFinite(mi) && mi>=0 && mi<levels.length) s.maxLevelIndex = mi;
 
-    // clamp to allowed max choices
     const allowed = [8,9,10,11,12];
     if(!allowed.includes(s.maxLevelIndex)) s.maxLevelIndex = 8;
 
@@ -256,6 +374,51 @@ function saveSettings(s){
 }
 
 let settings = loadSettings();
+
+/* ---------- CHIPS (persistent) ---------- */
+const CHIPS_KEY = "pokerClockChips_v1";
+const DEFAULT_CHIPS = {
+  caseTotal: 750,
+  players: 0,
+  rebuys: 0
+};
+
+// Buy-in / Re-buy stack (hardcoded "10k stack")
+const BUYIN_STACK = [
+  { denom: 25,   count: 8  },
+  { denom: 50,   count: 8  },
+  { denom: 100,  count: 14 },
+  { denom: 500,  count: 10 },
+  { denom: 1000, count: 3  }
+];
+// Re-buy uses the same stack for now:
+const REBUY_STACK = BUYIN_STACK;
+
+function loadChips(){
+  try{
+    const raw = localStorage.getItem(CHIPS_KEY);
+    if(!raw) return {...DEFAULT_CHIPS};
+    const p = JSON.parse(raw);
+    const c = {...DEFAULT_CHIPS};
+
+    const ct = Number(p.caseTotal);
+    const pl = Number(p.players);
+    const rb = Number(p.rebuys);
+
+    if(Number.isFinite(ct) && ct >= 0) c.caseTotal = Math.floor(ct);
+    if(Number.isFinite(pl) && pl >= 0) c.players = Math.floor(pl);
+    if(Number.isFinite(rb) && rb >= 0) c.rebuys = Math.floor(rb);
+
+    return c;
+  }catch{
+    return {...DEFAULT_CHIPS};
+  }
+}
+function saveChips(c){
+  localStorage.setItem(CHIPS_KEY, JSON.stringify(c));
+}
+
+let chipsState = loadChips();
 
 /* ---------- STATE ---------- */
 let level=0;
@@ -331,16 +494,13 @@ function sirenOnce_(startTime, gainPeak=0.20){
   osc.stop(startTime+1.25);
 }
 
+// Time's up: repeat twice with short gap
 function sirenTimeUp_(){
   if(!audioCtx) return;
   const base = audioCtx.currentTime;
-
-  const gap = 0.08;   // shorter pause between sounds
-  const dur = 1.25;   // length of one siren
-
-  for(let i=0;i<2;i++){
-    sirenOnce_(base + i * (dur + gap), 0.20);
-  }
+  const gap = 0.08, dur = 1.25;
+  for(let i=0;i<2;i++) sirenOnce_(base + i*(dur+gap), 0.20);
+}
 
 /* ---------- HELPERS ---------- */
 function fmt(s){
@@ -349,6 +509,16 @@ function fmt(s){
 
 function maxIndex(){
   return Math.min(settings.maxLevelIndex, levels.length-1);
+}
+
+function stackTotals(stack){
+  let chips = 0;
+  let value = 0;
+  for(const r of stack){
+    chips += r.count;
+    value += r.denom * r.count;
+  }
+  return { chips, value };
 }
 
 /* ---------- RENDER ---------- */
@@ -393,7 +563,7 @@ function tick(){
 
   if(remaining===0){
     sirenTimeUp_();
-    onTimeUp_(); // jump to next level and pause (do not start)
+    onTimeUp_(); // jump to next level and pause
   }
 }
 
@@ -460,7 +630,7 @@ function adjust(sec){
 }
 
 /* ---------- SETTINGS UI ---------- */
-const modal=document.getElementById("modalOverlay");
+const settingsOverlay = document.getElementById("settingsOverlay");
 const selMinutes=document.getElementById("selMinutes");
 const selMaxBlind=document.getElementById("selMaxBlind");
 
@@ -490,10 +660,10 @@ for(const c of maxChoices){
 function openSettings(){
   selMinutes.value = String(settings.roundMinutes);
   selMaxBlind.value = String(settings.maxLevelIndex);
-  modal.style.display="flex";
+  settingsOverlay.style.display="flex";
 }
 function closeSettings(){
-  modal.style.display="none";
+  settingsOverlay.style.display="none";
 }
 
 document.getElementById("btnSettings").addEventListener("click", openSettings);
@@ -517,9 +687,111 @@ document.getElementById("btnSaveSettings").addEventListener("click", ()=>{
 });
 
 // click outside modal to close
-modal.addEventListener("click", (e)=>{
-  if(e.target === modal) closeSettings();
+settingsOverlay.addEventListener("click", (e)=>{
+  if(e.target === settingsOverlay) closeSettings();
 });
+
+/* ---------- CHIPS UI ---------- */
+const chipsOverlay = document.getElementById("chipsOverlay");
+const inpCaseTotal = document.getElementById("inpCaseTotal");
+const inpPlayers = document.getElementById("inpPlayers");
+const inpRebuys = document.getElementById("inpRebuys");
+
+const caseTotalText = document.getElementById("caseTotalText");
+const buyinLines = document.getElementById("buyinLines");
+const rebuyLines = document.getElementById("rebuyLines");
+const buyinPills = document.getElementById("buyinPills");
+const rebuyPills = document.getElementById("rebuyPills");
+const buyinSummary = document.getElementById("buyinSummary");
+const rebuySummary = document.getElementById("rebuySummary");
+
+const chipsNeededEl = document.getElementById("chipsNeeded");
+const chipsRemainingEl = document.getElementById("chipsRemaining");
+
+function renderStackLines(container, stack){
+  container.innerHTML = "";
+  for(const r of stack){
+    const row = document.createElement("div");
+    row.className = "stackline";
+    row.innerHTML = `<div class="left">${r.denom} × ${r.count}</div><div class="right">${r.denom * r.count}</div>`;
+    container.appendChild(row);
+  }
+}
+
+function renderStackPills(container, totals){
+  container.innerHTML = "";
+  const p1 = document.createElement("div");
+  p1.className = "pill";
+  p1.textContent = `Total value: ${totals.value}`;
+  const p2 = document.createElement("div");
+  p2.className = "pill";
+  p2.textContent = `Total chips: ${totals.chips}`;
+  container.appendChild(p1);
+  container.appendChild(p2);
+}
+
+function updateChipCalc(){
+  const caseTotal = Math.max(0, Number(inpCaseTotal.value || 0));
+  const players = Math.max(0, Math.floor(Number(inpPlayers.value || 0)));
+  const rebuys = Math.max(0, Math.floor(Number(inpRebuys.value || 0)));
+
+  const buyTotals = stackTotals(BUYIN_STACK);
+  const rebTotals = stackTotals(REBUY_STACK);
+
+  const needed = players * buyTotals.chips + rebuys * rebTotals.chips;
+  const remainingChips = Math.floor(caseTotal) - needed;
+
+  caseTotalText.textContent = String(Math.floor(caseTotal));
+  chipsNeededEl.textContent = String(needed);
+  chipsRemainingEl.textContent = String(remainingChips);
+
+  // also update state (not saved yet)
+  chipsState.caseTotal = Math.floor(caseTotal);
+  chipsState.players = players;
+  chipsState.rebuys = rebuys;
+}
+
+function openChips(){
+  // load values into inputs
+  inpCaseTotal.value = String(chipsState.caseTotal);
+  inpPlayers.value = String(chipsState.players);
+  inpRebuys.value = String(chipsState.rebuys);
+
+  // render stacks
+  const buyTotals = stackTotals(BUYIN_STACK);
+  const rebTotals = stackTotals(REBUY_STACK);
+
+  buyinSummary.textContent = `${buyTotals.value} (${buyTotals.chips} chips)`;
+  rebuySummary.textContent = `${rebTotals.value} (${rebTotals.chips} chips)`;
+
+  renderStackLines(buyinLines, BUYIN_STACK);
+  renderStackLines(rebuyLines, REBUY_STACK);
+  renderStackPills(buyinPills, buyTotals);
+  renderStackPills(rebuyPills, rebTotals);
+
+  updateChipCalc();
+  chipsOverlay.style.display = "flex";
+}
+
+function closeChips(){
+  chipsOverlay.style.display = "none";
+}
+
+document.getElementById("btnChips").addEventListener("click", openChips);
+document.getElementById("btnCloseChips").addEventListener("click", closeChips);
+document.getElementById("btnSaveChips").addEventListener("click", ()=>{
+  // inputs already update chipsState via updateChipCalc()
+  saveChips(chipsState);
+  closeChips();
+});
+
+chipsOverlay.addEventListener("click", (e)=>{
+  if(e.target === chipsOverlay) closeChips();
+});
+
+inpCaseTotal.addEventListener("input", updateChipCalc);
+inpPlayers.addEventListener("input", updateChipCalc);
+inpRebuys.addEventListener("input", updateChipCalc);
 
 /* ---------- BUTTONS ---------- */
 document.getElementById("btnStart").addEventListener("click", async ()=>{
