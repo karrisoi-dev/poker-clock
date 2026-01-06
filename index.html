@@ -334,9 +334,13 @@ function sirenOnce_(startTime, gainPeak=0.20){
 function sirenTimeUp_(){
   if(!audioCtx) return;
   const base = audioCtx.currentTime;
-  const gap = 0.20, dur = 1.25;
-  for(let i=0;i<3;i++) sirenOnce_(base + i*(dur+gap), 0.20);
-}
+
+  const gap = 0.08;   // shorter pause between sounds
+  const dur = 1.25;   // length of one siren
+
+  for(let i=0;i<2;i++){
+    sirenOnce_(base + i * (dur + gap), 0.20);
+  }
 
 /* ---------- HELPERS ---------- */
 function fmt(s){
