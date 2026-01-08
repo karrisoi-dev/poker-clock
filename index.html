@@ -99,10 +99,8 @@
       top:1vh;
       right:1vw;
       z-index:3000;
-      display:flex;
-      align-items:flex-start;
-      gap:0.8vw;
     }
+
     .hambtn{
       font-size:2.2vw;
       padding:0.6vw 1vw;
@@ -117,11 +115,15 @@
     .hambtn:active{ transform: scale(0.97); filter: brightness(0.92); }
     .hambtn, .hambtn *{ color:#fff; }
 
+    /* Dropdown anchored under hamburger button */
     #menu{
+      position:absolute;
+      top:calc(100% + 0.8vh);
+      right:0;
       display:none;
       flex-direction:column;
       gap:0.6vh;
-      min-width: 18vw;
+      min-width: 22vw;
       background:#1b1b1b;
       border:1px solid rgba(255,255,255,0.12);
       border-radius:12px;
@@ -129,11 +131,12 @@
       box-shadow: 0 16px 40px rgba(0,0,0,0.6);
     }
     #menu.open{ display:flex; }
+
     .menuItem{
       width:100%;
       text-align:left;
       font-size:2.0vw;
-      padding:0.8vh 1vw;
+      padding:0.9vh 1vw;
       border-radius:10px;
       background:#111;
       color:#fff;
@@ -233,7 +236,7 @@
     .modal button.gray{ background:#cfcfcf; color:#000; }
     .modal button.green{ background:#4CAF50; color:#000; }
 
-    /* ===== CHIPS MODAL (stack tables vertically) ===== */
+    /* CHIPS MODAL (stack tables vertically) */
     .chipsStack{
       display:flex;
       flex-direction:column;
@@ -254,8 +257,8 @@
 
 <!-- Hamburger menu -->
 <div class="topbar" id="topbar">
-  <button class="hambtn" id="btnMenu" type="button">☰</button>
-  <div id="menu">
+  <button class="hambtn" id="btnMenu" type="button" aria-label="Menu" aria-expanded="false">☰</button>
+  <div id="menu" aria-hidden="true">
     <button class="menuItem" id="menuChips" type="button">🪙 Chips</button>
     <button class="menuItem" id="menuSettings" type="button">⚙️ Settings</button>
   </div>
@@ -388,8 +391,6 @@ const BUYIN_STACK = [
   { denom: 500,  count: 10 },
   { denom: 1000, count: 3  }
 ];
-
-// Re-buy stack: bigger value chips only (10k total)
 const REBUY_STACK = [
   { denom: 500,  count: 10 },
   { denom: 1000, count: 5  }
@@ -403,7 +404,6 @@ function stackTotals(stack){
   }
   return { chips, value };
 }
-
 function renderStackTable(tbody, stack){
   tbody.innerHTML = "";
   for(const r of stack){
@@ -644,11 +644,11 @@ document.getElementById("btnSaveSettings").addEventListener("click", ()=>{
   resetTimer();
   closeSettings();
 });
-settingsOverlay.addEventListener("click", (e)=>{
+settingsOverlay.addEventListener("pointerdown", (e)=>{
   if(e.target === settingsOverlay) closeSettings();
 });
 
-/* ---------- CHIPS UI (tables only) ---------- */
+/* ---------- CHIPS UI ---------- */
 const chipsOverlay = document.getElementById("chipsOverlay");
 const buyinTbody = document.getElementById("buyinTbody");
 const rebuyTbody = document.getElementById("rebuyTbody");
@@ -677,43 +677,47 @@ function closeChips(){
 }
 
 document.getElementById("btnCloseChips").addEventListener("click", closeChips);
-chipsOverlay.addEventListener("click", (e)=>{
+chipsOverlay.addEventListener("pointerdown", (e)=>{
   if(e.target === chipsOverlay) closeChips();
 });
 
-/* ---------- MENU LOGIC ---------- */
+/* ---------- MENU LOGIC (fixed) ---------- */
 const btnMenu = document.getElementById("btnMenu");
 const menu = document.getElementById("menu");
 const menuChips = document.getElementById("menuChips");
 const menuSettings = document.getElementById("menuSettings");
 
-function closeMenu(){
-  menu.classList.remove("open");
-}
-function toggleMenu(){
-  menu.classList.toggle("open");
+function setMenuOpen(open){
+  menu.classList.toggle("open", open);
+  btnMenu.setAttribute("aria-expanded", open ? "true" : "false");
+  menu.setAttribute("aria-hidden", open ? "false" : "true");
 }
 
-btnMenu.addEventListener("click", (e)=>{
+function isMenuOpen(){
+  return menu.classList.contains("open");
+}
+
+btnMenu.addEventListener("pointerdown", (e)=>{
+  e.preventDefault();   // important on iOS
   e.stopPropagation();
-  toggleMenu();
+  setMenuOpen(!isMenuOpen());
 });
 
-menu.addEventListener("click", (e)=>{
+menu.addEventListener("pointerdown", (e)=>{
   e.stopPropagation();
 });
 
-document.addEventListener("click", ()=>{
-  closeMenu();
+document.addEventListener("pointerdown", ()=>{
+  setMenuOpen(false);
 });
 
 menuChips.addEventListener("click", ()=>{
-  closeMenu();
+  setMenuOpen(false);
   openChips();
 });
 
 menuSettings.addEventListener("click", ()=>{
-  closeMenu();
+  setMenuOpen(false);
   openSettings();
 });
 
