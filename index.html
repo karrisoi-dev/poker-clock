@@ -93,26 +93,55 @@
     .red{ background:#f44336; color:#000; }
     .gray{ background:#cfcfcf; color:#000; }
 
-    /* Top buttons */
+    /* ===== Hamburger menu ===== */
     .topbar{
       position:fixed;
       top:1vh;
       right:1vw;
-      z-index:1000;
+      z-index:3000;
       display:flex;
+      align-items:flex-start;
       gap:0.8vw;
-      align-items:center;
     }
-    .topbtn{
-      font-size:1.9vw;
+    .hambtn{
+      font-size:2.2vw;
       padding:0.6vw 1vw;
       border-radius:10px;
       background:#2b2b2b;
       color:#fff;
       border:1px solid rgba(255,255,255,0.12);
+      cursor:pointer;
+      -webkit-appearance:none;
+      appearance:none;
     }
-    .topbtn:active{ transform: scale(0.97); filter: brightness(0.92); }
-    .topbtn, .topbtn *{ color:#fff; }
+    .hambtn:active{ transform: scale(0.97); filter: brightness(0.92); }
+    .hambtn, .hambtn *{ color:#fff; }
+
+    #menu{
+      display:none;
+      flex-direction:column;
+      gap:0.6vh;
+      min-width: 18vw;
+      background:#1b1b1b;
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:12px;
+      padding:0.8vh 0.8vw;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+    }
+    #menu.open{ display:flex; }
+    .menuItem{
+      width:100%;
+      text-align:left;
+      font-size:2.0vw;
+      padding:0.8vh 1vw;
+      border-radius:10px;
+      background:#111;
+      color:#fff;
+      border:1px solid rgba(255,255,255,0.10);
+      cursor:pointer;
+    }
+    .menuItem:active{ transform: scale(0.99); filter: brightness(0.92); }
+    .menuItem, .menuItem *{ color:#fff; }
 
     /* Modal overlay */
     .modalOverlay{
@@ -204,22 +233,18 @@
     .modal button.gray{ background:#cfcfcf; color:#000; }
     .modal button.green{ background:#4CAF50; color:#000; }
 
-    /* ===== CHIPS MODAL FIXES (ONLY) ===== */
-
-    /* stack tables vertically */
+    /* ===== CHIPS MODAL (stack tables vertically) ===== */
     .chipsStack{
       display:flex;
       flex-direction:column;
       gap:1.0vh;
       margin-top:0.6vh;
     }
-
-    /* make chips tables smaller so they fit nicely */
     .chipsStack table{
-      font-size:1.75vw;           /* smaller than default */
+      font-size:1.75vw;
     }
     .chipsStack th, .chipsStack td{
-      padding:0.45vh 0.7vw;       /* tighter */
+      padding:0.45vh 0.7vw;
     }
   </style>
 </head>
@@ -227,9 +252,13 @@
 <body>
 <div id="flashOverlay"></div>
 
-<div class="topbar">
-  <button class="topbtn" id="btnChips" type="button">🪙 Chips</button>
-  <button class="topbtn" id="btnSettings" type="button">⚙️ Settings</button>
+<!-- Hamburger menu -->
+<div class="topbar" id="topbar">
+  <button class="hambtn" id="btnMenu" type="button">☰</button>
+  <div id="menu">
+    <button class="menuItem" id="menuChips" type="button">🪙 Chips</button>
+    <button class="menuItem" id="menuSettings" type="button">⚙️ Settings</button>
+  </div>
 </div>
 
 <!-- SETTINGS MODAL -->
@@ -351,7 +380,7 @@ function saveSettings(s){
 }
 let settings = loadSettings();
 
-/* ---------- CHIP STACKS (static tables) ---------- */
+/* ---------- CHIP STACKS ---------- */
 const BUYIN_STACK = [
   { denom: 25,   count: 8  },
   { denom: 50,   count: 8  },
@@ -362,8 +391,8 @@ const BUYIN_STACK = [
 
 // Re-buy stack: bigger value chips only (10k total)
 const REBUY_STACK = [
-  { denom: 500,  count: 10 }, // 5000
-  { denom: 1000, count: 5  }  // 5000
+  { denom: 500,  count: 10 },
+  { denom: 1000, count: 5  }
 ];
 
 function stackTotals(stack){
@@ -458,7 +487,6 @@ function sirenOnce_(startTime, gainPeak=0.20){
   osc.stop(startTime+1.25);
 }
 
-// Time's up: repeat twice with short gap
 function sirenTimeUp_(){
   if(!audioCtx) return;
   const base = audioCtx.currentTime;
@@ -601,7 +629,6 @@ function closeSettings(){
   settingsOverlay.style.display="none";
 }
 
-document.getElementById("btnSettings").addEventListener("click", openSettings);
 document.getElementById("btnCancelSettings").addEventListener("click", closeSettings);
 document.getElementById("btnSaveSettings").addEventListener("click", ()=>{
   settings.roundMinutes = Number(selMinutes.value) || 10;
@@ -649,10 +676,45 @@ function closeChips(){
   chipsOverlay.style.display="none";
 }
 
-document.getElementById("btnChips").addEventListener("click", openChips);
 document.getElementById("btnCloseChips").addEventListener("click", closeChips);
 chipsOverlay.addEventListener("click", (e)=>{
   if(e.target === chipsOverlay) closeChips();
+});
+
+/* ---------- MENU LOGIC ---------- */
+const btnMenu = document.getElementById("btnMenu");
+const menu = document.getElementById("menu");
+const menuChips = document.getElementById("menuChips");
+const menuSettings = document.getElementById("menuSettings");
+
+function closeMenu(){
+  menu.classList.remove("open");
+}
+function toggleMenu(){
+  menu.classList.toggle("open");
+}
+
+btnMenu.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  toggleMenu();
+});
+
+menu.addEventListener("click", (e)=>{
+  e.stopPropagation();
+});
+
+document.addEventListener("click", ()=>{
+  closeMenu();
+});
+
+menuChips.addEventListener("click", ()=>{
+  closeMenu();
+  openChips();
+});
+
+menuSettings.addEventListener("click", ()=>{
+  closeMenu();
+  openSettings();
 });
 
 /* ---------- BUTTONS ---------- */
