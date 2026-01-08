@@ -40,7 +40,6 @@
       box-sizing:border-box;
     }
 
-    /* --- TIME (stable colon) --- */
     .time{
       font-size:20vw;
       font-weight:800;
@@ -54,7 +53,7 @@
     }
     .time.urgent{ color:#ff2d2d; }
 
-    .info{ margin-top:1.5vh; line-height:1.2; }
+    .info{ margin-top:1.2vh; line-height:1.2; }
     .info.current{ font-size:4.4vw; }
     .info.next{ font-size:3.2vw; opacity:0.6; }
 
@@ -115,7 +114,7 @@
     .topbtn:active{ transform: scale(0.97); filter: brightness(0.92); }
     .topbtn, .topbtn *{ color:#fff; }
 
-    /* Modal overlay (only this is transparent) */
+    /* Modal overlay */
     .modalOverlay{
       position:fixed;
       inset:0;
@@ -128,31 +127,42 @@
       box-sizing:border-box;
     }
 
-    /* Modal itself: solid */
+    /* Modal: tighter */
     .modal{
-      width:min(80vw, 520px);
+      width:min(78vw, 560px);
       background:#1b1b1b;
       opacity:1;
       border-radius:16px;
-      padding:2vh 2vw;
+      padding:1.6vh 1.6vw;
       box-shadow: 0 20px 50px rgba(0,0,0,0.7);
       color:#fff;
     }
     .modal h2{
-      margin:0 0 1.2vh 0;
-      font-size:3.2vw;
+      margin:0 0 1vh 0;
+      font-size:3.0vw;
     }
-    .modal label{
-      display:block;
-      margin-top:1.4vh;
-      font-size:2.6vw;
-      opacity:0.9;
+
+    .rowgrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:0.8vw;
+      align-items:end;
+      margin-bottom:1vh;
+    }
+    .rowgrid .field{
+      display:flex;
+      flex-direction:column;
+      gap:0.4vh;
+    }
+    .label{
+      font-size:2.2vw;
+      opacity:0.85;
     }
 
     select, input{
       width:100%;
-      font-size:2.6vw;
-      padding:1vh;
+      font-size:2.4vw;
+      padding:0.9vh 0.9vw;
       background:#111;
       color:#fff;
       border-radius:10px;
@@ -160,65 +170,64 @@
       font-family: inherit;
       -webkit-appearance:none;
       appearance:none;
-      opacity:1;
       box-sizing:border-box;
     }
 
     .modalButtons{
-      margin-top:2vh;
+      margin-top:1.1vh;
       display:flex;
       justify-content:flex-end;
       gap:1vw;
       flex-wrap:wrap;
     }
 
-    .muted{
-      opacity:0.75;
-      font-size:2.4vw;
+    /* Tables (tight + readable) */
+    .twocol{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:1.2vw;
       margin-top:0.8vh;
-      line-height:1.25;
     }
 
-    .section{
-      margin-top:1.6vh;
-      padding-top:1.2vh;
-      border-top:1px solid rgba(255,255,255,0.12);
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#121212;
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:12px;
+      overflow:hidden;
+      font-size:2.2vw;
     }
+    th, td{
+      padding:0.7vh 0.9vw;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      text-align:left;
+      white-space:nowrap;
+    }
+    th{
+      opacity:0.85;
+      font-weight:700;
+      background:#0f0f0f;
+    }
+    td.r, th.r{ text-align:right; }
+    tr:last-child td{ border-bottom:none; }
 
-    .kv{
+    .summary{
       display:flex;
       justify-content:space-between;
-      gap:2vw;
-      font-size:2.6vw;
-      margin-top:0.6vh;
-    }
-    .kv .k{ opacity:0.8; }
-    .kv .v{ text-align:right; }
-
-    .stackline{
-      display:flex;
-      justify-content:space-between;
-      gap:2vw;
-      font-size:2.6vw;
-      margin-top:0.4vh;
-      opacity:0.95;
-    }
-    .stackline .left{ opacity:0.9; }
-    .stackline .right{ opacity:0.9; }
-
-    .pillrow{
-      display:flex;
       gap:1vw;
-      flex-wrap:wrap;
-      margin-top:0.8vh;
+      font-size:2.2vw;
+      opacity:0.9;
+      margin-top:0.5vh;
     }
-    .pill{
-      background:#111;
-      border:1px solid rgba(255,255,255,0.14);
-      border-radius:999px;
-      padding:0.5vh 1vw;
-      font-size:2.4vw;
-      opacity:0.95;
+    .summary .r{ text-align:right; }
+
+    /* SETTINGS modal specific */
+    .settingsGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:1vw;
+      margin-bottom:0.6vh;
     }
   </style>
 </head>
@@ -236,11 +245,16 @@
   <div class="modal">
     <h2>Settings</h2>
 
-    <label for="selMinutes">Round length</label>
-    <select id="selMinutes"></select>
-
-    <label for="selMaxBlind">Max blind</label>
-    <select id="selMaxBlind"></select>
+    <div class="settingsGrid">
+      <div class="field">
+        <div class="label">Round length</div>
+        <select id="selMinutes"></select>
+      </div>
+      <div class="field">
+        <div class="label">Max blind</div>
+        <select id="selMaxBlind"></select>
+      </div>
+    </div>
 
     <div class="modalButtons">
       <button class="gray" id="btnCancelSettings" type="button">Cancel</button>
@@ -254,55 +268,51 @@
   <div class="modal">
     <h2>Chips</h2>
 
-    <div class="section" style="border-top:none; padding-top:0; margin-top:0;">
-      <div class="kv">
-        <div class="k">Case total chips</div>
-        <div class="v"><span id="caseTotalText">750</span></div>
+    <div class="rowgrid">
+      <div class="field">
+        <div class="label">Case total</div>
+        <input id="inpCaseTotal" type="number" min="0" step="1" inputmode="numeric" />
       </div>
-
-      <label for="inpCaseTotal" style="margin-top:1.2vh;">Edit case total (chips)</label>
-      <input id="inpCaseTotal" type="number" min="0" step="1" inputmode="numeric" />
-      <div class="muted">This is the total number of chips in your case (e.g. 750).</div>
+      <div class="field">
+        <div class="label">Players</div>
+        <input id="inpPlayers" type="number" min="0" step="1" inputmode="numeric" />
+      </div>
+      <div class="field">
+        <div class="label">Re-buys</div>
+        <input id="inpRebuys" type="number" min="0" step="1" inputmode="numeric" />
+      </div>
     </div>
 
-    <div class="section">
-      <div class="kv">
-        <div class="k">Buy-in stack</div>
-        <div class="v"><span id="buyinSummary">—</span></div>
-      </div>
-      <div id="buyinLines"></div>
-      <div class="pillrow" id="buyinPills"></div>
+    <div class="summary">
+      <div>Needed: <span id="chipsNeeded">—</span></div>
+      <div class="r">Remaining: <span id="chipsRemaining">—</span></div>
     </div>
 
-    <div class="section">
-      <div class="kv">
-        <div class="k">Re-buy stack</div>
-        <div class="v"><span id="rebuySummary">—</span></div>
-      </div>
-      <div id="rebuyLines"></div>
-      <div class="pillrow" id="rebuyPills"></div>
-      <div class="muted">Re-buy uses the same stack as buy-in (you can change this later if you want).</div>
-    </div>
-
-    <div class="section">
-      <div class="kv">
-        <div class="k">Quick calculator</div>
-        <div class="v"></div>
+    <div class="twocol">
+      <div>
+        <table>
+          <thead>
+            <tr><th colspan="3">Buy-in stack</th></tr>
+            <tr><th>Denom</th><th class="r">Count</th><th class="r">Value</th></tr>
+          </thead>
+          <tbody id="buyinTbody"></tbody>
+          <tfoot>
+            <tr><th>Total</th><th class="r" id="buyinTotalChips">—</th><th class="r" id="buyinTotalValue">—</th></tr>
+          </tfoot>
+        </table>
       </div>
 
-      <label for="inpPlayers">Players (buy-ins)</label>
-      <input id="inpPlayers" type="number" min="0" step="1" inputmode="numeric" />
-
-      <label for="inpRebuys">Re-buys</label>
-      <input id="inpRebuys" type="number" min="0" step="1" inputmode="numeric" />
-
-      <div class="kv" style="margin-top:1.2vh;">
-        <div class="k">Chips needed</div>
-        <div class="v" id="chipsNeeded">—</div>
-      </div>
-      <div class="kv">
-        <div class="k">Chips remaining</div>
-        <div class="v" id="chipsRemaining">—</div>
+      <div>
+        <table>
+          <thead>
+            <tr><th colspan="3">Re-buy stack</th></tr>
+            <tr><th>Denom</th><th class="r">Count</th><th class="r">Value</th></tr>
+          </thead>
+          <tbody id="rebuyTbody"></tbody>
+          <tfoot>
+            <tr><th>Total</th><th class="r" id="rebuyTotalChips">—</th><th class="r" id="rebuyTotalValue">—</th></tr>
+          </tfoot>
+        </table>
       </div>
     </div>
 
@@ -372,18 +382,13 @@ function loadSettings(){
 function saveSettings(s){
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
 }
-
 let settings = loadSettings();
 
 /* ---------- CHIPS (persistent) ---------- */
-const CHIPS_KEY = "pokerClockChips_v1";
-const DEFAULT_CHIPS = {
-  caseTotal: 750,
-  players: 0,
-  rebuys: 0
-};
+const CHIPS_KEY = "pokerClockChips_v2";
+const DEFAULT_CHIPS = { caseTotal: 750, players: 0, rebuys: 0 };
 
-// Buy-in / Re-buy stack (hardcoded "10k stack")
+/* Buy-in / Re-buy stacks */
 const BUYIN_STACK = [
   { denom: 25,   count: 8  },
   { denom: 50,   count: 8  },
@@ -391,8 +396,12 @@ const BUYIN_STACK = [
   { denom: 500,  count: 10 },
   { denom: 1000, count: 3  }
 ];
-// Re-buy uses the same stack for now:
-const REBUY_STACK = BUYIN_STACK;
+
+/* Re-buy stack: bigger value chips only (10k total) */
+const REBUY_STACK = [
+  { denom: 500,  count: 10 }, // 5000
+  { denom: 1000, count: 5  }  // 5000
+];
 
 function loadChips(){
   try{
@@ -417,7 +426,6 @@ function loadChips(){
 function saveChips(c){
   localStorage.setItem(CHIPS_KEY, JSON.stringify(c));
 }
-
 let chipsState = loadChips();
 
 /* ---------- STATE ---------- */
@@ -506,14 +514,11 @@ function sirenTimeUp_(){
 function fmt(s){
   return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
 }
-
 function maxIndex(){
   return Math.min(settings.maxLevelIndex, levels.length-1);
 }
-
 function stackTotals(stack){
-  let chips = 0;
-  let value = 0;
+  let chips = 0, value = 0;
   for(const r of stack){
     chips += r.count;
     value += r.denom * r.count;
@@ -531,7 +536,6 @@ function render(){
     ? `${levels[level+1].sb} / ${levels[level+1].bb}`
     : "—";
 }
-
 function flashWhite_(){
   flash.classList.add("on");
   setTimeout(()=>flash.classList.remove("on"), 110);
@@ -571,7 +575,6 @@ function start(){
   if(timer) return;
   timer = setInterval(tick, 1000);
 }
-
 function pause(){
   clearInterval(timer);
   timer = null;
@@ -583,7 +586,7 @@ function onTimeUp_(){
 
   if(level < maxIndex()){
     level++;
-    remaining = settings.roundMinutes * 60; // reset timer for next round
+    remaining = settings.roundMinutes * 60;
   } else {
     remaining = 0;
   }
@@ -591,7 +594,6 @@ function onTimeUp_(){
   didWarn60 = false;
   lastFlashSecond = null;
   render();
-  // stays paused; user must press Start
 }
 
 function next(){
@@ -600,7 +602,6 @@ function next(){
     resetTimer();
   }
 }
-
 function previous(){
   if(level>0){
     level--;
@@ -608,7 +609,6 @@ function previous(){
   }
 }
 
-// Reset timer for current level (pause)
 function resetTimer(){
   pause();
   remaining = settings.roundMinutes*60;
@@ -616,13 +616,11 @@ function resetTimer(){
   lastFlashSecond = null;
   render();
 }
-
 function resetAll(){
   pause();
   level = 0;
   resetTimer();
 }
-
 function adjust(sec){
   remaining = Math.max(0, remaining + sec);
   lastFlashSecond = null;
@@ -634,7 +632,6 @@ const settingsOverlay = document.getElementById("settingsOverlay");
 const selMinutes=document.getElementById("selMinutes");
 const selMaxBlind=document.getElementById("selMaxBlind");
 
-// minutes list
 [5,6,7,8,9,10,12,15,20].forEach(m=>{
   const opt = document.createElement("option");
   opt.value = String(m);
@@ -642,7 +639,6 @@ const selMaxBlind=document.getElementById("selMaxBlind");
   selMinutes.appendChild(opt);
 });
 
-// max blind choices
 const maxChoices = [
   { idx: 8,  label: "800 / 1600" },
   { idx: 9,  label: "1000 / 2000" },
@@ -672,21 +668,16 @@ document.getElementById("btnSaveSettings").addEventListener("click", ()=>{
   settings.roundMinutes = Number(selMinutes.value) || 10;
   settings.maxLevelIndex = Number(selMaxBlind.value);
 
-  // hard defaults if something weird happens
   const allowed = [8,9,10,11,12];
   if(!allowed.includes(settings.maxLevelIndex)) settings.maxLevelIndex = 8;
   if(!(settings.roundMinutes >= 1 && settings.roundMinutes <= 60)) settings.roundMinutes = 10;
 
   saveSettings(settings);
 
-  // clamp current level to max
   if(level > maxIndex()) level = maxIndex();
-
-  resetTimer(); // apply new round length, paused
+  resetTimer();
   closeSettings();
 });
-
-// click outside modal to close
 settingsOverlay.addEventListener("click", (e)=>{
   if(e.target === settingsOverlay) closeSettings();
 });
@@ -697,94 +688,75 @@ const inpCaseTotal = document.getElementById("inpCaseTotal");
 const inpPlayers = document.getElementById("inpPlayers");
 const inpRebuys = document.getElementById("inpRebuys");
 
-const caseTotalText = document.getElementById("caseTotalText");
-const buyinLines = document.getElementById("buyinLines");
-const rebuyLines = document.getElementById("rebuyLines");
-const buyinPills = document.getElementById("buyinPills");
-const rebuyPills = document.getElementById("rebuyPills");
-const buyinSummary = document.getElementById("buyinSummary");
-const rebuySummary = document.getElementById("rebuySummary");
-
 const chipsNeededEl = document.getElementById("chipsNeeded");
 const chipsRemainingEl = document.getElementById("chipsRemaining");
 
-function renderStackLines(container, stack){
-  container.innerHTML = "";
+const buyinTbody = document.getElementById("buyinTbody");
+const rebuyTbody = document.getElementById("rebuyTbody");
+const buyinTotalChips = document.getElementById("buyinTotalChips");
+const buyinTotalValue = document.getElementById("buyinTotalValue");
+const rebuyTotalChips = document.getElementById("rebuyTotalChips");
+const rebuyTotalValue = document.getElementById("rebuyTotalValue");
+
+function renderStackTable(tbody, stack){
+  tbody.innerHTML = "";
   for(const r of stack){
-    const row = document.createElement("div");
-    row.className = "stackline";
-    row.innerHTML = `<div class="left">${r.denom} × ${r.count}</div><div class="right">${r.denom * r.count}</div>`;
-    container.appendChild(row);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r.denom}</td><td class="r">${r.count}</td><td class="r">${r.denom * r.count}</td>`;
+    tbody.appendChild(tr);
   }
 }
 
-function renderStackPills(container, totals){
-  container.innerHTML = "";
-  const p1 = document.createElement("div");
-  p1.className = "pill";
-  p1.textContent = `Total value: ${totals.value}`;
-  const p2 = document.createElement("div");
-  p2.className = "pill";
-  p2.textContent = `Total chips: ${totals.chips}`;
-  container.appendChild(p1);
-  container.appendChild(p2);
-}
-
 function updateChipCalc(){
-  const caseTotal = Math.max(0, Number(inpCaseTotal.value || 0));
+  const caseTotal = Math.max(0, Math.floor(Number(inpCaseTotal.value || 0)));
   const players = Math.max(0, Math.floor(Number(inpPlayers.value || 0)));
-  const rebuys = Math.max(0, Math.floor(Number(inpRebuys.value || 0)));
+  const rebuys  = Math.max(0, Math.floor(Number(inpRebuys.value || 0)));
 
   const buyTotals = stackTotals(BUYIN_STACK);
   const rebTotals = stackTotals(REBUY_STACK);
 
   const needed = players * buyTotals.chips + rebuys * rebTotals.chips;
-  const remainingChips = Math.floor(caseTotal) - needed;
+  const remainingChips = caseTotal - needed;
 
-  caseTotalText.textContent = String(Math.floor(caseTotal));
   chipsNeededEl.textContent = String(needed);
   chipsRemainingEl.textContent = String(remainingChips);
 
-  // also update state (not saved yet)
-  chipsState.caseTotal = Math.floor(caseTotal);
+  // update state (not saved yet)
+  chipsState.caseTotal = caseTotal;
   chipsState.players = players;
   chipsState.rebuys = rebuys;
 }
 
 function openChips(){
-  // load values into inputs
   inpCaseTotal.value = String(chipsState.caseTotal);
   inpPlayers.value = String(chipsState.players);
-  inpRebuys.value = String(chipsState.rebuys);
+  inpRebuys.value  = String(chipsState.rebuys);
 
-  // render stacks
+  renderStackTable(buyinTbody, BUYIN_STACK);
+  renderStackTable(rebuyTbody, REBUY_STACK);
+
   const buyTotals = stackTotals(BUYIN_STACK);
   const rebTotals = stackTotals(REBUY_STACK);
 
-  buyinSummary.textContent = `${buyTotals.value} (${buyTotals.chips} chips)`;
-  rebuySummary.textContent = `${rebTotals.value} (${rebTotals.chips} chips)`;
+  buyinTotalChips.textContent = String(buyTotals.chips);
+  buyinTotalValue.textContent = String(buyTotals.value);
 
-  renderStackLines(buyinLines, BUYIN_STACK);
-  renderStackLines(rebuyLines, REBUY_STACK);
-  renderStackPills(buyinPills, buyTotals);
-  renderStackPills(rebuyPills, rebTotals);
+  rebuyTotalChips.textContent = String(rebTotals.chips);
+  rebuyTotalValue.textContent = String(rebTotals.value);
 
   updateChipCalc();
-  chipsOverlay.style.display = "flex";
+  chipsOverlay.style.display="flex";
 }
-
 function closeChips(){
-  chipsOverlay.style.display = "none";
+  chipsOverlay.style.display="none";
 }
 
 document.getElementById("btnChips").addEventListener("click", openChips);
 document.getElementById("btnCloseChips").addEventListener("click", closeChips);
 document.getElementById("btnSaveChips").addEventListener("click", ()=>{
-  // inputs already update chipsState via updateChipCalc()
   saveChips(chipsState);
   closeChips();
 });
-
 chipsOverlay.addEventListener("click", (e)=>{
   if(e.target === chipsOverlay) closeChips();
 });
