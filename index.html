@@ -101,13 +101,14 @@
       z-index:3000;
     }
 
+    /* 1) Hamburger button: no background */
     .hambtn{
-      font-size:2.2vw;
-      padding:0.6vw 1vw;
+      font-size:2.6vw;
+      padding:0.2vw 0.6vw;
       border-radius:10px;
-      background:#2b2b2b;
+      background:transparent;                /* removed grey bg */
       color:#fff;
-      border:1px solid rgba(255,255,255,0.12);
+      border:none;                           /* remove border */
       cursor:pointer;
       -webkit-appearance:none;
       appearance:none;
@@ -132,18 +133,25 @@
     }
     #menu.open{ display:flex; }
 
+    /* 2) Menu items: no background (transparent) */
     .menuItem{
       width:100%;
       text-align:left;
       font-size:2.0vw;
       padding:0.9vh 1vw;
       border-radius:10px;
-      background:#111;
+      background:transparent;                /* removed bg */
       color:#fff;
-      border:1px solid rgba(255,255,255,0.10);
+      border:none;                           /* removed border */
       cursor:pointer;
     }
-    .menuItem:active{ transform: scale(0.99); filter: brightness(0.92); }
+    .menuItem:hover{
+      background:rgba(255,255,255,0.08);     /* subtle hover */
+    }
+    .menuItem:active{
+      transform: scale(0.99);
+      background:rgba(255,255,255,0.12);     /* subtle tap feedback */
+    }
     .menuItem, .menuItem *{ color:#fff; }
 
     /* Modal overlay */
@@ -681,7 +689,7 @@ chipsOverlay.addEventListener("pointerdown", (e)=>{
   if(e.target === chipsOverlay) closeChips();
 });
 
-/* ---------- MENU LOGIC (fixed) ---------- */
+/* ---------- MENU LOGIC ---------- */
 const btnMenu = document.getElementById("btnMenu");
 const menu = document.getElementById("menu");
 const menuChips = document.getElementById("menuChips");
@@ -692,21 +700,18 @@ function setMenuOpen(open){
   btnMenu.setAttribute("aria-expanded", open ? "true" : "false");
   menu.setAttribute("aria-hidden", open ? "false" : "true");
 }
-
 function isMenuOpen(){
   return menu.classList.contains("open");
 }
 
 btnMenu.addEventListener("pointerdown", (e)=>{
-  e.preventDefault();   // important on iOS
+  e.preventDefault();
   e.stopPropagation();
   setMenuOpen(!isMenuOpen());
 });
-
 menu.addEventListener("pointerdown", (e)=>{
   e.stopPropagation();
 });
-
 document.addEventListener("pointerdown", ()=>{
   setMenuOpen(false);
 });
@@ -715,7 +720,6 @@ menuChips.addEventListener("click", ()=>{
   setMenuOpen(false);
   openChips();
 });
-
 menuSettings.addEventListener("click", ()=>{
   setMenuOpen(false);
   openSettings();
