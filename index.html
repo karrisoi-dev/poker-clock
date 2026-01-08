@@ -1,225 +1,675 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Poker Clock</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Poker Clock</title>
 
-<style>
-body{
-  margin:0;
-  background:#111;
-  color:#fff;
-  font-family:Tahoma, Arial, sans-serif;
-  height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-}
+  <style>
+    body{
+      margin:0;
+      background:#111;
+      color:#fff;
+      font-family: Tahoma, Arial, Helvetica, sans-serif;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      user-select:none;
+      -webkit-user-select:none;
+      touch-action:manipulation;
+      overflow:hidden;
+    }
 
-/* ---------- CLOCK ---------- */
-.clock{
-  width:100%;
-  text-align:center;
-  padding:2vh 2vw;
-}
-.time{
-  font-size:20vw;
-  font-weight:800;
-  font-variant-numeric:tabular-nums;
-}
-.time.urgent{ color:#ff2d2d; }
+    /* White flash overlay (last 5 seconds) */
+    #flashOverlay{
+      position:fixed;
+      inset:0;
+      background:#fff;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity 60ms linear;
+      z-index:9999;
+    }
+    #flashOverlay.on{ opacity:1; }
 
-.info.current{ font-size:4.4vw; margin-top:1vh; }
-.info.next{ font-size:3.2vw; opacity:.6; }
+    .clock{
+      text-align:center;
+      width:100%;
+      padding:2vh 2vw;
+      box-sizing:border-box;
+    }
 
-/* ---------- BUTTONS ---------- */
-.buttons{ margin-top:3vh; }
-.btnrow{
-  display:flex;
-  justify-content:center;
-  gap:1vw;
-  margin-bottom:1vh;
-}
-button{
-  font-size:3vw;
-  padding:1.2vw 2.2vw;
-  border:none;
-  border-radius:12px;
-  cursor:pointer;
-  -webkit-appearance:none;
-}
-button:active{ transform:scale(.97); }
+    .time{
+      font-size:20vw;
+      font-weight:800;
+      letter-spacing:0.02em;
+      line-height:1;
+      font-variant-numeric: tabular-nums;
+      min-width:7ch;
+      display:inline-block;
+      text-align:center;
+      color:#fff;
+    }
+    .time.urgent{ color:#ff2d2d; }
 
-.green{ background:#4CAF50; }
-.orange{ background:#FF9800; }
-.red{ background:#f44336; }
-.gray{ background:#cfcfcf; }
+    .info{ margin-top:1.2vh; line-height:1.2; }
+    .info.current{ font-size:4.4vw; }
+    .info.next{ font-size:3.2vw; opacity:0.6; }
 
-/* ---------- TOP BAR ---------- */
-.topbar{
-  position:fixed;
-  top:1vh;
-  right:1vw;
-  display:flex;
-  gap:.8vw;
-}
-.topbtn{
-  font-size:1.9vw;
-  padding:.6vw 1vw;
-  background:#2b2b2b;
-  color:#fff;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.15);
-}
+    .buttons{
+      margin-top:3vh;
+      display:flex;
+      flex-direction:column;
+      gap:1.4vh;
+      align-items:center;
+    }
+    .btnrow{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:1vw;
+    }
 
-/* ---------- MODALS ---------- */
-.modalOverlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.6);
-  display:none;
-  align-items:center;
-  justify-content:center;
-}
-.modal{
-  background:#1b1b1b;
-  width:min(78vw,520px);
-  border-radius:16px;
-  padding:1.4vh 1.4vw;
-}
-.modal h2{
-  margin:0 0 .8vh 0;
-  font-size:2.4vw;
-}
+    /* Buttons: force non-blue iOS styling */
+    button{
+      font-size:3vw;
+      padding:1.2vw 2.2vw;
+      border-radius:12px;
+      border:none;
+      cursor:pointer;
+      font-family: inherit;
+      color:#000;
+      background-clip: padding-box;
+      -webkit-appearance:none;
+      appearance:none;
+      transition: transform 80ms ease, filter 80ms ease;
+    }
+    button:active{ transform: scale(0.97); filter: brightness(0.9); }
+    button, button *{ color: inherit; }
 
-/* ---------- TABLES (CHIPS) ---------- */
-table{
-  width:100%;
-  border-collapse:collapse;
-  background:#121212;
-  margin-bottom:1vh;
-  font-size:1.9vw;          /* smaller */
-}
-th, td{
-  padding:.45vh .8vw;
-  border-bottom:1px solid rgba(255,255,255,.08);
-}
-th{
-  background:#0f0f0f;
-  opacity:.85;
-}
-td.r, th.r{ text-align:right; }
+    .green{ background:#4CAF50; color:#000; }
+    .orange{ background:#FF9800; color:#000; }
+    .red{ background:#f44336; color:#000; }
+    .gray{ background:#cfcfcf; color:#000; }
 
-/* ---------- SETTINGS ---------- */
-select{
-  width:100%;
-  font-size:2.2vw;
-  padding:.6vh .6vw;
-  background:#111;
-  color:#fff;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.2);
-}
+    /* Top buttons */
+    .topbar{
+      position:fixed;
+      top:1vh;
+      right:1vw;
+      z-index:1000;
+      display:flex;
+      gap:0.8vw;
+      align-items:center;
+    }
+    .topbtn{
+      font-size:1.9vw;
+      padding:0.6vw 1vw;
+      border-radius:10px;
+      background:#2b2b2b;
+      color:#fff;
+      border:1px solid rgba(255,255,255,0.12);
+    }
+    .topbtn:active{ transform: scale(0.97); filter: brightness(0.92); }
+    .topbtn, .topbtn *{ color:#fff; }
 
-.modalButtons{
-  display:flex;
-  justify-content:flex-end;
-  gap:1vw;
-}
-</style>
+    /* Modal overlay */
+    .modalOverlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.6);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:2000;
+      padding:2vh 2vw;
+      box-sizing:border-box;
+    }
+
+    /* Modal: solid */
+    .modal{
+      width:min(78vw, 560px);
+      background:#1b1b1b;
+      opacity:1;
+      border-radius:16px;
+      padding:1.6vh 1.6vw;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+      color:#fff;
+    }
+
+    /* Smaller fonts inside modals */
+    .modal h2{
+      margin:0 0 0.8vh 0;
+      font-size:2.6vw;
+    }
+    .modal .label{
+      font-size:2.0vw;
+      opacity:0.85;
+    }
+    .modal select{
+      width:100%;
+      font-size:2.2vw;
+      padding:0.8vh 0.8vw;
+      background:#111;
+      color:#fff;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.18);
+      font-family: inherit;
+      -webkit-appearance:none;
+      appearance:none;
+      box-sizing:border-box;
+    }
+
+    .modalButtons{
+      margin-top:1.0vh;
+      display:flex;
+      justify-content:flex-end;
+      gap:1vw;
+      flex-wrap:wrap;
+    }
+
+    /* Tables (base style) */
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#121212;
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:12px;
+      overflow:hidden;
+      font-size:2.0vw;
+    }
+    th, td{
+      padding:0.55vh 0.8vw;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      text-align:left;
+      white-space:nowrap;
+    }
+    th{
+      opacity:0.85;
+      font-weight:700;
+      background:#0f0f0f;
+    }
+    td.r, th.r{ text-align:right; }
+    tr:last-child td{ border-bottom:none; }
+
+    /* Settings modal grid */
+    .settingsGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:1vw;
+      margin-bottom:0.6vh;
+    }
+
+    .modal button.gray{ background:#cfcfcf; color:#000; }
+    .modal button.green{ background:#4CAF50; color:#000; }
+
+    /* ===== CHIPS MODAL FIXES (ONLY) ===== */
+
+    /* stack tables vertically */
+    .chipsStack{
+      display:flex;
+      flex-direction:column;
+      gap:1.0vh;
+      margin-top:0.6vh;
+    }
+
+    /* make chips tables smaller so they fit nicely */
+    .chipsStack table{
+      font-size:1.75vw;           /* smaller than default */
+    }
+    .chipsStack th, .chipsStack td{
+      padding:0.45vh 0.7vw;       /* tighter */
+    }
+  </style>
 </head>
 
 <body>
+<div id="flashOverlay"></div>
 
 <div class="topbar">
-  <button class="topbtn" id="btnChips">🪙 Chips</button>
-  <button class="topbtn" id="btnSettings">⚙️ Settings</button>
+  <button class="topbtn" id="btnChips" type="button">🪙 Chips</button>
+  <button class="topbtn" id="btnSettings" type="button">⚙️ Settings</button>
 </div>
 
-<!-- SETTINGS -->
-<div class="modalOverlay" id="settingsOverlay">
+<!-- SETTINGS MODAL -->
+<div class="modalOverlay" id="settingsOverlay" role="dialog" aria-modal="true">
   <div class="modal">
     <h2>Settings</h2>
-    <select id="selMinutes"></select>
-    <select id="selMaxBlind" style="margin-top:.6vh"></select>
+
+    <div class="settingsGrid">
+      <div>
+        <div class="label">Round length</div>
+        <select id="selMinutes"></select>
+      </div>
+      <div>
+        <div class="label">Max blind</div>
+        <select id="selMaxBlind"></select>
+      </div>
+    </div>
+
     <div class="modalButtons">
-      <button class="gray" onclick="settingsOverlay.style.display='none'">Close</button>
+      <button class="gray" id="btnCancelSettings" type="button">Cancel</button>
+      <button class="green" id="btnSaveSettings" type="button">Save</button>
     </div>
   </div>
 </div>
 
-<!-- CHIPS -->
-<div class="modalOverlay" id="chipsOverlay">
+<!-- CHIPS MODAL -->
+<div class="modalOverlay" id="chipsOverlay" role="dialog" aria-modal="true">
   <div class="modal">
     <h2>Chips</h2>
 
-    <table>
-      <thead>
-        <tr><th colspan="3">Buy-in stack</th></tr>
-        <tr><th>Chip</th><th class="r">Count</th><th class="r">Total</th></tr>
-      </thead>
-      <tbody id="buyinTbody"></tbody>
-    </table>
+    <div class="chipsStack">
+      <table>
+        <thead>
+          <tr><th colspan="3">Buy-in stack</th></tr>
+          <tr><th>Chip</th><th class="r">Count</th><th class="r">Value</th></tr>
+        </thead>
+        <tbody id="buyinTbody"></tbody>
+        <tfoot>
+          <tr><th>Total</th><th class="r" id="buyinTotalChips">—</th><th class="r" id="buyinTotalValue">—</th></tr>
+        </tfoot>
+      </table>
 
-    <table>
-      <thead>
-        <tr><th colspan="3">Re-buy stack</th></tr>
-        <tr><th>Chip</th><th class="r">Count</th><th class="r">Total</th></tr>
-      </thead>
-      <tbody id="rebuyTbody"></tbody>
-    </table>
+      <table>
+        <thead>
+          <tr><th colspan="3">Re-buy stack</th></tr>
+          <tr><th>Chip</th><th class="r">Count</th><th class="r">Value</th></tr>
+        </thead>
+        <tbody id="rebuyTbody"></tbody>
+        <tfoot>
+          <tr><th>Total</th><th class="r" id="rebuyTotalChips">—</th><th class="r" id="rebuyTotalValue">—</th></tr>
+        </tfoot>
+      </table>
+    </div>
 
     <div class="modalButtons">
-      <button class="gray" onclick="chipsOverlay.style.display='none'">Close</button>
+      <button class="gray" id="btnCloseChips" type="button">Close</button>
     </div>
   </div>
 </div>
 
 <div class="clock">
   <div class="time" id="time">10:00</div>
+
   <div class="info current">Current Blind <span id="currentBlinds">25 / 50</span></div>
   <div class="info next">Next Blind <span id="nextBlinds">50 / 100</span></div>
 
   <div class="buttons">
     <div class="btnrow">
-      <button class="green">Start</button>
-      <button class="orange">Pause</button>
-      <button class="red">Reset Timer</button>
-      <button class="red">Reset All</button>
+      <button class="green" id="btnStart" type="button">Start</button>
+      <button class="orange" id="btnPause" type="button">Pause</button>
+      <button class="red" id="btnResetTimer" type="button">Reset Timer</button>
+      <button class="red" id="btnResetAll" type="button">Reset All</button>
+    </div>
+    <div class="btnrow">
+      <button class="gray" id="btnPrev" type="button">Previous</button>
+      <button class="gray" id="btnNext" type="button">Next</button>
+      <button class="gray" id="btnPlus" type="button">+1 min</button>
+      <button class="gray" id="btnMinus" type="button">-1 min</button>
     </div>
   </div>
 </div>
 
 <script>
-const BUYIN_STACK=[
- {denom:25,count:8},
- {denom:50,count:8},
- {denom:100,count:14},
- {denom:500,count:10},
- {denom:1000,count:3}
-];
-const REBUY_STACK=[
- {denom:500,count:10},
- {denom:1000,count:5}
+/* ---------- LEVELS ---------- */
+const levels = [
+  {sb:25,bb:50},{sb:50,bb:100},{sb:100,bb:200},{sb:150,bb:300},
+  {sb:200,bb:400},{sb:300,bb:600},{sb:400,bb:800},
+  {sb:600,bb:1200},{sb:800,bb:1600},
+  {sb:1000,bb:2000},{sb:1500,bb:3000},{sb:2000,bb:4000},{sb:3000,bb:6000}
 ];
 
-function renderStack(id, stack){
-  const tb=document.getElementById(id);
-  tb.innerHTML="";
-  stack.forEach(r=>{
-    tb.innerHTML+=`<tr><td>${r.denom}</td><td class="r">${r.count}</td><td class="r">${r.denom*r.count}</td></tr>`;
-  });
+/* ---------- SETTINGS ---------- */
+const SETTINGS_KEY="pokerClockSettings_v2";
+const DEFAULT_SETTINGS={ roundMinutes:10, maxLevelIndex:8 }; // default max = 800/1600
+
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if(!raw) return {...DEFAULT_SETTINGS};
+    const p = JSON.parse(raw);
+
+    const s = {...DEFAULT_SETTINGS};
+    const rm = Number(p.roundMinutes);
+    const mi = Number(p.maxLevelIndex);
+
+    if(Number.isFinite(rm) && rm>=1 && rm<=60) s.roundMinutes = rm;
+    if(Number.isFinite(mi) && mi>=0 && mi<levels.length) s.maxLevelIndex = mi;
+
+    const allowed = [8,9,10,11,12];
+    if(!allowed.includes(s.maxLevelIndex)) s.maxLevelIndex = 8;
+
+    return s;
+  }catch{
+    return {...DEFAULT_SETTINGS};
+  }
+}
+function saveSettings(s){
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
+let settings = loadSettings();
+
+/* ---------- CHIP STACKS (static tables) ---------- */
+const BUYIN_STACK = [
+  { denom: 25,   count: 8  },
+  { denom: 50,   count: 8  },
+  { denom: 100,  count: 14 },
+  { denom: 500,  count: 10 },
+  { denom: 1000, count: 3  }
+];
+
+// Re-buy stack: bigger value chips only (10k total)
+const REBUY_STACK = [
+  { denom: 500,  count: 10 }, // 5000
+  { denom: 1000, count: 5  }  // 5000
+];
+
+function stackTotals(stack){
+  let chips = 0, value = 0;
+  for(const r of stack){
+    chips += r.count;
+    value += r.denom * r.count;
+  }
+  return { chips, value };
 }
 
-document.getElementById("btnChips").onclick=()=>{
-  renderStack("buyinTbody", BUYIN_STACK);
-  renderStack("rebuyTbody", REBUY_STACK);
-  chipsOverlay.style.display="flex";
-};
-document.getElementById("btnSettings").onclick=()=>settingsOverlay.style.display="flex";
-</script>
+function renderStackTable(tbody, stack){
+  tbody.innerHTML = "";
+  for(const r of stack){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r.denom}</td><td class="r">${r.count}</td><td class="r">${r.denom * r.count}</td>`;
+    tbody.appendChild(tr);
+  }
+}
 
+/* ---------- STATE ---------- */
+let level=0;
+let remaining=settings.roundMinutes*60;
+let timer=null;
+
+let didWarn60 = false;
+let lastFlashSecond = null;
+
+/* ---------- UI ---------- */
+const timeEl=document.getElementById("time");
+const curEl=document.getElementById("currentBlinds");
+const nextEl=document.getElementById("nextBlinds");
+const flash=document.getElementById("flashOverlay");
+
+/* ---------- AUDIO ---------- */
+let audioCtx=null;
+
+async function unlockAudio(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(audioCtx.state==="suspended") await audioCtx.resume();
+}
+
+function clickAt_(baseTime, tOffsetSec, gain=0.12){
+  if(!audioCtx) return;
+  const t = baseTime + tOffsetSec;
+
+  const osc = audioCtx.createOscillator();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(1800, t);
+
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(gain, t+0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+0.07);
+
+  osc.connect(g);
+  g.connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t+0.08);
+}
+
+function ticLast10_(){
+  if(!audioCtx) return;
+  clickAt_(audioCtx.currentTime, 0, 0.06);
+}
+
+function sixClicks60_(){
+  if(!audioCtx) return;
+  const base = audioCtx.currentTime;
+  const spacing = 0.28;
+  for(let i=0;i<6;i++) clickAt_(base, i*spacing, 0.11);
+}
+
+function sirenOnce_(startTime, gainPeak=0.20){
+  const osc = audioCtx.createOscillator();
+  osc.type = "triangle";
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.0001, startTime);
+  g.gain.linearRampToValueAtTime(gainPeak, startTime+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, startTime+1.2);
+
+  osc.connect(g);
+  g.connect(audioCtx.destination);
+
+  osc.frequency.setValueAtTime(600, startTime);
+  osc.frequency.linearRampToValueAtTime(1250, startTime+0.3);
+  osc.frequency.linearRampToValueAtTime(650,  startTime+0.6);
+  osc.frequency.linearRampToValueAtTime(1300, startTime+0.9);
+  osc.frequency.linearRampToValueAtTime(700,  startTime+1.2);
+
+  osc.start(startTime);
+  osc.stop(startTime+1.25);
+}
+
+// Time's up: repeat twice with short gap
+function sirenTimeUp_(){
+  if(!audioCtx) return;
+  const base = audioCtx.currentTime;
+  const gap = 0.08, dur = 1.25;
+  for(let i=0;i<2;i++) sirenOnce_(base + i*(dur+gap), 0.20);
+}
+
+/* ---------- HELPERS ---------- */
+function fmt(s){
+  return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+}
+function maxIndex(){
+  return Math.min(settings.maxLevelIndex, levels.length-1);
+}
+
+/* ---------- RENDER ---------- */
+function render(){
+  timeEl.textContent = fmt(remaining);
+  timeEl.classList.toggle("urgent", remaining<=10 && remaining>0);
+
+  curEl.textContent = `${levels[level].sb} / ${levels[level].bb}`;
+  nextEl.textContent = level < maxIndex()
+    ? `${levels[level+1].sb} / ${levels[level+1].bb}`
+    : "—";
+}
+function flashWhite_(){
+  flash.classList.add("on");
+  setTimeout(()=>flash.classList.remove("on"), 110);
+}
+
+/* ---------- CLOCK ---------- */
+function tick(){
+  if(remaining<=0) return;
+
+  remaining--;
+  render();
+
+  if(remaining<=10 && remaining>0) ticLast10_();
+
+  if(remaining<=5 && remaining>0 && lastFlashSecond !== remaining){
+    lastFlashSecond = remaining;
+    flashWhite_();
+  }
+
+  if(remaining===60 && !didWarn60){
+    didWarn60 = true;
+    sixClicks60_();
+  }
+
+  if(remaining===0){
+    sirenTimeUp_();
+    onTimeUp_();
+  }
+}
+
+function start(){
+  if(timer) return;
+  timer = setInterval(tick, 1000);
+}
+function pause(){
+  clearInterval(timer);
+  timer = null;
+}
+
+function onTimeUp_(){
+  pause();
+  if(level < maxIndex()){
+    level++;
+    remaining = settings.roundMinutes * 60;
+  }else{
+    remaining = 0;
+  }
+  didWarn60 = false;
+  lastFlashSecond = null;
+  render();
+}
+
+function next(){
+  if(level < maxIndex()){
+    level++;
+    resetTimer();
+  }
+}
+function previous(){
+  if(level>0){
+    level--;
+    resetTimer();
+  }
+}
+function resetTimer(){
+  pause();
+  remaining = settings.roundMinutes*60;
+  didWarn60 = false;
+  lastFlashSecond = null;
+  render();
+}
+function resetAll(){
+  pause();
+  level = 0;
+  resetTimer();
+}
+function adjust(sec){
+  remaining = Math.max(0, remaining + sec);
+  lastFlashSecond = null;
+  render();
+}
+
+/* ---------- SETTINGS UI ---------- */
+const settingsOverlay = document.getElementById("settingsOverlay");
+const selMinutes=document.getElementById("selMinutes");
+const selMaxBlind=document.getElementById("selMaxBlind");
+
+[5,6,7,8,9,10,12,15,20].forEach(m=>{
+  const opt = document.createElement("option");
+  opt.value = String(m);
+  opt.textContent = `${m} min`;
+  selMinutes.appendChild(opt);
+});
+
+const maxChoices = [
+  { idx: 8,  label: "800 / 1600" },
+  { idx: 9,  label: "1000 / 2000" },
+  { idx: 10, label: "1500 / 3000" },
+  { idx: 11, label: "2000 / 4000" },
+  { idx: 12, label: "3000 / 6000" }
+];
+for(const c of maxChoices){
+  const opt = document.createElement("option");
+  opt.value = String(c.idx);
+  opt.textContent = c.label;
+  selMaxBlind.appendChild(opt);
+}
+
+function openSettings(){
+  selMinutes.value = String(settings.roundMinutes);
+  selMaxBlind.value = String(settings.maxLevelIndex);
+  settingsOverlay.style.display="flex";
+}
+function closeSettings(){
+  settingsOverlay.style.display="none";
+}
+
+document.getElementById("btnSettings").addEventListener("click", openSettings);
+document.getElementById("btnCancelSettings").addEventListener("click", closeSettings);
+document.getElementById("btnSaveSettings").addEventListener("click", ()=>{
+  settings.roundMinutes = Number(selMinutes.value) || 10;
+  settings.maxLevelIndex = Number(selMaxBlind.value);
+
+  const allowed = [8,9,10,11,12];
+  if(!allowed.includes(settings.maxLevelIndex)) settings.maxLevelIndex = 8;
+  if(!(settings.roundMinutes >= 1 && settings.roundMinutes <= 60)) settings.roundMinutes = 10;
+
+  saveSettings(settings);
+
+  if(level > maxIndex()) level = maxIndex();
+  resetTimer();
+  closeSettings();
+});
+settingsOverlay.addEventListener("click", (e)=>{
+  if(e.target === settingsOverlay) closeSettings();
+});
+
+/* ---------- CHIPS UI (tables only) ---------- */
+const chipsOverlay = document.getElementById("chipsOverlay");
+const buyinTbody = document.getElementById("buyinTbody");
+const rebuyTbody = document.getElementById("rebuyTbody");
+const buyinTotalChips = document.getElementById("buyinTotalChips");
+const buyinTotalValue = document.getElementById("buyinTotalValue");
+const rebuyTotalChips = document.getElementById("rebuyTotalChips");
+const rebuyTotalValue = document.getElementById("rebuyTotalValue");
+
+function openChips(){
+  renderStackTable(buyinTbody, BUYIN_STACK);
+  renderStackTable(rebuyTbody, REBUY_STACK);
+
+  const buyTotals = stackTotals(BUYIN_STACK);
+  const rebTotals = stackTotals(REBUY_STACK);
+
+  buyinTotalChips.textContent = String(buyTotals.chips);
+  buyinTotalValue.textContent = String(buyTotals.value);
+
+  rebuyTotalChips.textContent = String(rebTotals.chips);
+  rebuyTotalValue.textContent = String(rebTotals.value);
+
+  chipsOverlay.style.display="flex";
+}
+function closeChips(){
+  chipsOverlay.style.display="none";
+}
+
+document.getElementById("btnChips").addEventListener("click", openChips);
+document.getElementById("btnCloseChips").addEventListener("click", closeChips);
+chipsOverlay.addEventListener("click", (e)=>{
+  if(e.target === chipsOverlay) closeChips();
+});
+
+/* ---------- BUTTONS ---------- */
+document.getElementById("btnStart").addEventListener("click", async ()=>{
+  await unlockAudio();
+  start();
+});
+document.getElementById("btnPause").addEventListener("click", pause);
+document.getElementById("btnNext").addEventListener("click", next);
+document.getElementById("btnPrev").addEventListener("click", previous);
+document.getElementById("btnPlus").addEventListener("click", ()=>adjust(60));
+document.getElementById("btnMinus").addEventListener("click", ()=>adjust(-60));
+document.getElementById("btnResetTimer").addEventListener("click", resetTimer);
+document.getElementById("btnResetAll").addEventListener("click", resetAll);
+
+/* ---------- INIT ---------- */
+render();
+</script>
 </body>
 </html>
